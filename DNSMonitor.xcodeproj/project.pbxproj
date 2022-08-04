@@ -1,0 +1,551 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		CD2ED2402895971B008D6F39 /* LogMonitor.m in Sources */ = {isa = PBXBuildFile; fileRef = CD2ED23E2895971A008D6F39 /* LogMonitor.m */; };
+		CD78BF3B28905EB200FBA1E4 /* DNSProxyProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = CD78BF3A28905EB200FBA1E4 /* DNSProxyProvider.m */; };
+		CDB2CC1D24D61A4E00D0EECE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = CDB2CC1C24D61A4E00D0EECE /* AppDelegate.m */; };
+		CDB2CC1F24D61A5000D0EECE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CDB2CC1E24D61A5000D0EECE /* Assets.xcassets */; };
+		CDB2CC2224D61A5000D0EECE /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = CDB2CC2024D61A5000D0EECE /* MainMenu.xib */; };
+		CDB2CC2524D61A5000D0EECE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = CDB2CC2424D61A5000D0EECE /* main.m */; };
+		CDB2CC3324D61B3900D0EECE /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CDB2CC3224D61B3900D0EECE /* NetworkExtension.framework */; };
+		CDB2CC3924D61B3900D0EECE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = CDB2CC3824D61B3900D0EECE /* main.m */; };
+		CDB2CC4424DBE48100D0EECE /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CDB2CC3224D61B3900D0EECE /* NetworkExtension.framework */; };
+		CDBF3DBF28903C4B00A1C51B /* com.objective-see.dnsmonitor.extension.systemextension in Embed System Extensions */ = {isa = PBXBuildFile; fileRef = CDB2CC3024D61B3900D0EECE /* com.objective-see.dnsmonitor.extension.systemextension */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CDC378C7250C66C300314064 /* Extension.m in Sources */ = {isa = PBXBuildFile; fileRef = CDC378C6250C66C300314064 /* Extension.m */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		CDB2CC3C24D61B3900D0EECE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CDB2CC1024D61A4E00D0EECE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CDB2CC2F24D61B3900D0EECE;
+			remoteInfo = Extension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		CDB2CC4224D61B3900D0EECE /* Embed System Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = "$(SYSTEM_EXTENSIONS_FOLDER_PATH)";
+			dstSubfolderSpec = 16;
+			files = (
+				CDBF3DBF28903C4B00A1C51B /* com.objective-see.dnsmonitor.extension.systemextension in Embed System Extensions */,
+			);
+			name = "Embed System Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		CD2ED23E2895971A008D6F39 /* LogMonitor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LogMonitor.m; sourceTree = "<group>"; };
+		CD2ED23F2895971B008D6F39 /* LogMonitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LogMonitor.h; sourceTree = "<group>"; };
+		CD78BF3928905EB200FBA1E4 /* DNSProxyProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DNSProxyProvider.h; sourceTree = "<group>"; };
+		CD78BF3A28905EB200FBA1E4 /* DNSProxyProvider.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DNSProxyProvider.m; sourceTree = "<group>"; };
+		CDA1363A24EF4DA0005AD424 /* consts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = consts.h; path = Shared/consts.h; sourceTree = SOURCE_ROOT; };
+		CDA136C624F0D7C3005AD424 /* consts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = consts.h; path = Shared/consts.h; sourceTree = SOURCE_ROOT; };
+		CDB2CC1824D61A4E00D0EECE /* DNSMonitor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DNSMonitor.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CDB2CC1B24D61A4E00D0EECE /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		CDB2CC1C24D61A4E00D0EECE /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		CDB2CC1E24D61A5000D0EECE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		CDB2CC2124D61A5000D0EECE /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
+		CDB2CC2324D61A5000D0EECE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		CDB2CC2424D61A5000D0EECE /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		CDB2CC2624D61A5000D0EECE /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
+		CDB2CC3024D61B3900D0EECE /* com.objective-see.dnsmonitor.extension.systemextension */ = {isa = PBXFileReference; explicitFileType = "wrapper.system-extension"; includeInIndex = 0; path = "com.objective-see.dnsmonitor.extension.systemextension"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CDB2CC3224D61B3900D0EECE /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
+		CDB2CC3824D61B3900D0EECE /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		CDB2CC3A24D61B3900D0EECE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		CDB2CC3B24D61B3900D0EECE /* Extension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Extension.entitlements; sourceTree = "<group>"; };
+		CDC378C5250C66C200314064 /* Extension.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Extension.h; sourceTree = "<group>"; };
+		CDC378C6250C66C300314064 /* Extension.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Extension.m; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		CDB2CC1524D61A4E00D0EECE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CDB2CC4424DBE48100D0EECE /* NetworkExtension.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CDB2CC2D24D61B3900D0EECE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CDB2CC3324D61B3900D0EECE /* NetworkExtension.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		CDA135F824EBB58E005AD424 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				CDA1363A24EF4DA0005AD424 /* consts.h */,
+			);
+			name = Shared;
+			sourceTree = "<group>";
+		};
+		CDA136BD24F0D526005AD424 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				CDA136C624F0D7C3005AD424 /* consts.h */,
+			);
+			name = Shared;
+			sourceTree = "<group>";
+		};
+		CDB2CC0F24D61A4E00D0EECE = {
+			isa = PBXGroup;
+			children = (
+				CDB2CC1A24D61A4E00D0EECE /* App */,
+				CDB2CC3424D61B3900D0EECE /* Extension */,
+				CDB2CC3124D61B3900D0EECE /* Frameworks */,
+				CDB2CC1924D61A4E00D0EECE /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CDB2CC1924D61A4E00D0EECE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				CDB2CC1824D61A4E00D0EECE /* DNSMonitor.app */,
+				CDB2CC3024D61B3900D0EECE /* com.objective-see.dnsmonitor.extension.systemextension */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		CDB2CC1A24D61A4E00D0EECE /* App */ = {
+			isa = PBXGroup;
+			children = (
+				CDB2CC2624D61A5000D0EECE /* App.entitlements */,
+				CDB2CC1B24D61A4E00D0EECE /* AppDelegate.h */,
+				CDB2CC1C24D61A4E00D0EECE /* AppDelegate.m */,
+				CDB2CC1E24D61A5000D0EECE /* Assets.xcassets */,
+				CDC378C5250C66C200314064 /* Extension.h */,
+				CDC378C6250C66C300314064 /* Extension.m */,
+				CDB2CC2324D61A5000D0EECE /* Info.plist */,
+				CDB2CC2424D61A5000D0EECE /* main.m */,
+				CDB2CC2024D61A5000D0EECE /* MainMenu.xib */,
+				CD2ED23F2895971B008D6F39 /* LogMonitor.h */,
+				CD2ED23E2895971A008D6F39 /* LogMonitor.m */,
+				CDA136BD24F0D526005AD424 /* Shared */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		CDB2CC3124D61B3900D0EECE /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				CDB2CC3224D61B3900D0EECE /* NetworkExtension.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		CDB2CC3424D61B3900D0EECE /* Extension */ = {
+			isa = PBXGroup;
+			children = (
+				CDB2CC3B24D61B3900D0EECE /* Extension.entitlements */,
+				CD78BF3928905EB200FBA1E4 /* DNSProxyProvider.h */,
+				CD78BF3A28905EB200FBA1E4 /* DNSProxyProvider.m */,
+				CDB2CC3A24D61B3900D0EECE /* Info.plist */,
+				CDB2CC3824D61B3900D0EECE /* main.m */,
+				CDA135F824EBB58E005AD424 /* Shared */,
+			);
+			path = Extension;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		CDB2CC1724D61A4E00D0EECE /* DNSMonitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CDB2CC2924D61A5000D0EECE /* Build configuration list for PBXNativeTarget "DNSMonitor" */;
+			buildPhases = (
+				CDB2CC1424D61A4E00D0EECE /* Sources */,
+				CDB2CC1524D61A4E00D0EECE /* Frameworks */,
+				CDB2CC1624D61A4E00D0EECE /* Resources */,
+				CDB2CC4224D61B3900D0EECE /* Embed System Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CDB2CC3D24D61B3900D0EECE /* PBXTargetDependency */,
+			);
+			name = DNSMonitor;
+			productName = TestExtension;
+			productReference = CDB2CC1824D61A4E00D0EECE /* DNSMonitor.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CDB2CC2F24D61B3900D0EECE /* Extension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CDB2CC3F24D61B3900D0EECE /* Build configuration list for PBXNativeTarget "Extension" */;
+			buildPhases = (
+				CDB2CC2C24D61B3900D0EECE /* Sources */,
+				CDB2CC2D24D61B3900D0EECE /* Frameworks */,
+				CDB2CC2E24D61B3900D0EECE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Extension;
+			productName = Extension;
+			productReference = CDB2CC3024D61B3900D0EECE /* com.objective-see.dnsmonitor.extension.systemextension */;
+			productType = "com.apple.product-type.system-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		CDB2CC1024D61A4E00D0EECE /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1340;
+				ORGANIZATIONNAME = "Objective-See";
+				TargetAttributes = {
+					CDB2CC1724D61A4E00D0EECE = {
+						CreatedOnToolsVersion = 11.6;
+					};
+					CDB2CC2F24D61B3900D0EECE = {
+						CreatedOnToolsVersion = 11.6;
+					};
+				};
+			};
+			buildConfigurationList = CDB2CC1324D61A4E00D0EECE /* Build configuration list for PBXProject "DNSMonitor" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = CDB2CC0F24D61A4E00D0EECE;
+			productRefGroup = CDB2CC1924D61A4E00D0EECE /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				CDB2CC1724D61A4E00D0EECE /* DNSMonitor */,
+				CDB2CC2F24D61B3900D0EECE /* Extension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		CDB2CC1624D61A4E00D0EECE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CDB2CC1F24D61A5000D0EECE /* Assets.xcassets in Resources */,
+				CDB2CC2224D61A5000D0EECE /* MainMenu.xib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CDB2CC2E24D61B3900D0EECE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		CDB2CC1424D61A4E00D0EECE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CD2ED2402895971B008D6F39 /* LogMonitor.m in Sources */,
+				CDB2CC2524D61A5000D0EECE /* main.m in Sources */,
+				CDB2CC1D24D61A4E00D0EECE /* AppDelegate.m in Sources */,
+				CDC378C7250C66C300314064 /* Extension.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CDB2CC2C24D61B3900D0EECE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CDB2CC3924D61B3900D0EECE /* main.m in Sources */,
+				CD78BF3B28905EB200FBA1E4 /* DNSProxyProvider.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CDB2CC3D24D61B3900D0EECE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CDB2CC2F24D61B3900D0EECE /* Extension */;
+			targetProxy = CDB2CC3C24D61B3900D0EECE /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		CDB2CC2024D61A5000D0EECE /* MainMenu.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				CDB2CC2124D61A5000D0EECE /* Base */,
+			);
+			name = MainMenu.xib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		CDB2CC2724D61A5000D0EECE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		CDB2CC2824D61A5000D0EECE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		CDB2CC2A24D61A5000D0EECE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 0.9;
+				DEVELOPMENT_TEAM = VBG97UB4TA;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MARKETING_VERSION = 0.9;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.objective-see.dnsmonitor.app";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "DNS Extension Application";
+			};
+			name = Debug;
+		};
+		CDB2CC2B24D61A5000D0EECE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 0.9;
+				DEVELOPMENT_TEAM = VBG97UB4TA;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MARKETING_VERSION = 0.9;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.objective-see.dnsmonitor.app";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "DNS Extension Application";
+			};
+			name = Release;
+		};
+		CDB2CC4024D61B3900D0EECE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Extension/Extension.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 0.9;
+				DEVELOPMENT_TEAM = VBG97UB4TA;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = YES;
+				INFOPLIST_FILE = Extension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MARKETING_VERSION = 0.9;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.objective-see.dnsmonitor.extension";
+				PRODUCT_NAME = "com.objective-see.dnsmonitor.extension";
+				PROVISIONING_PROFILE_SPECIFIER = "DNS Monitor Extension";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		CDB2CC4124D61B3900D0EECE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Extension/Extension.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 0.9;
+				DEVELOPMENT_TEAM = VBG97UB4TA;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = YES;
+				INFOPLIST_FILE = Extension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MARKETING_VERSION = 0.9;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.objective-see.dnsmonitor.extension";
+				PRODUCT_NAME = "com.objective-see.dnsmonitor.extension";
+				PROVISIONING_PROFILE_SPECIFIER = "DNS Monitor Extension";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CDB2CC1324D61A4E00D0EECE /* Build configuration list for PBXProject "DNSMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CDB2CC2724D61A5000D0EECE /* Debug */,
+				CDB2CC2824D61A5000D0EECE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CDB2CC2924D61A5000D0EECE /* Build configuration list for PBXNativeTarget "DNSMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CDB2CC2A24D61A5000D0EECE /* Debug */,
+				CDB2CC2B24D61A5000D0EECE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CDB2CC3F24D61B3900D0EECE /* Build configuration list for PBXNativeTarget "Extension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CDB2CC4024D61B3900D0EECE /* Debug */,
+				CDB2CC4124D61B3900D0EECE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = CDB2CC1024D61A4E00D0EECE /* Project object */;
+}
