@@ -206,6 +206,7 @@ NSString* convertIPAddr(unsigned char* ipAddr, __uint8_t socketFamily)
         //set flag
         handled = YES;
     }
+    //TODO: handle TCP!
     //not UDP flow
     else
     {
@@ -382,7 +383,6 @@ NSString* convertIPAddr(unsigned char* ipAddr, __uint8_t socketFamily)
     return;
 }
 
-//TODO: answer/questions, fail?
 //parse a DNS request
 // extract question (url)
 -(void)parseDNSRequest:(NSData*)datagram
@@ -537,6 +537,7 @@ bail:
         goto bail;
     }
     
+    //TODO: handle this?
     //ignore any packets that don't have answers
     if(0 == ntohs(dnsHeader->ancount))
     {
