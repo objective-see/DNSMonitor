@@ -33,6 +33,9 @@
 //main app interface
 -(void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
+    //foreground
+    [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+    
     //make front/active
     [NSApp activateIgnoringOtherApps:YES];
     
