@@ -54,7 +54,6 @@
         [self.liveStream setFilterPredicate:predicate];
     }
     
-
     //sanity check
     // obj responds to `setInvalidationHandler:`?
     if(YES != [self.liveStream respondsToSelector:NSSelectorFromString(@"setInvalidationHandler:")])

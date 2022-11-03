@@ -21,7 +21,11 @@
     OSSystemExtensionRequest* request = nil;
     
     //dbg msg
-    NSLog(@"toggling System Extension (action: %lu)", (unsigned long)action);
+    if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+    {
+        //dbg msg
+        NSLog(@"toggling System Extension (action: %lu)", (unsigned long)action);
+    }
     
     //save reply
     self.replyBlock = reply;
@@ -30,7 +34,10 @@
     if(ACTION_ACTIVATE == action)
     {
         //dbg msg
-        NSLog(@"creating 'OSSystemExtensionRequest' activation request");
+        if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+        {
+            NSLog(@"creating 'OSSystemExtensionRequest' activation request");
+        }
         
         //init request
         request = [OSSystemExtensionRequest activationRequestForExtension:EXT_BUNDLE_ID queue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0)];
@@ -39,7 +46,10 @@
     else
     {
         //dbg msg
-        NSLog(@"creating 'OSSystemExtensionRequest' deactivation request");
+        if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+        {
+            NSLog(@"creating 'OSSystemExtensionRequest' deactivation request");
+        }
         
         //init request
         request = [OSSystemExtensionRequest deactivationRequestForExtension:EXT_BUNDLE_ID queue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0)];
@@ -49,7 +59,10 @@
     if(nil == request)
     {
         //err msg
-        NSLog(@"ERROR: failed to create request for extension");
+        if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+        {
+            NSLog(@"ERROR: failed to create request for extension");
+        }
         
         //bail
         goto bail;
@@ -59,7 +72,10 @@
     request.delegate = self;
     
     //dbg msg
-    NSLog(@"submitting request...");
+    if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+    {
+        NSLog(@"submitting request...");
+    }
        
     //submit request
     [OSSystemExtensionManager.sharedManager submitRequest:request];
@@ -67,7 +83,6 @@
 bail:
     
     return;
-    
 }
 
 //start network extension
@@ -77,7 +92,10 @@ bail:
     __block NEDNSProxyProviderProtocol* protocol =  nil;
     
     //dbg msg
-    NSLog(@"starting network extension...");
+    if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+    {
+        NSLog(@"starting network extension...");
+    }
         
     //load prefs
     [NEDNSProxyManager.sharedManager loadFromPreferencesWithCompletionHandler:^(NSError * _Nullable error) {
@@ -86,17 +104,24 @@ bail:
         if(nil != error)
         {
             //err msg
-            NSLog(@"ERROR: 'loadFromPreferencesWithCompletionHandler' failed with %@", error);
+            if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+            {
+                NSLog(@"ERROR: 'loadFromPreferencesWithCompletionHandler' failed with %@", error);
+            }
+            
             reply(NO);
         }
         
         //dbg msg
-        NSLog(@"activating network extension...");
+        if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+        {
+            NSLog(@"activating network extension...");
+        }
         
         //set description
         NEDNSProxyManager.sharedManager.localizedDescription = @"DNS";
         
-        //init protcol
+        //init protocol
         protocol = [[NEDNSProxyProviderProtocol alloc] init];
         
         //set provider
@@ -105,7 +130,7 @@ bail:
         //set protocol
         NEDNSProxyManager.sharedManager.providerProtocol = protocol;
         
-        //enble
+        //enable
         NEDNSProxyManager.sharedManager.enabled = YES;
             
         //save preferences
@@ -115,7 +140,11 @@ bail:
             if(nil != error)
             {
                 //err msg
-                NSLog(@"ERROR: 'saveToPreferencesWithCompletionHandler' failed with %@", error);
+                if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+                {
+                    NSLog(@"ERROR: 'saveToPreferencesWithCompletionHandler' failed with %@", error);
+                }
+                
                 reply(NO);
             }
             
@@ -135,7 +164,10 @@ bail:
 -(OSSystemExtensionReplacementAction)request:(nonnull OSSystemExtensionRequest *)request actionForReplacingExtension:(nonnull OSSystemExtensionProperties *)existing withExtension:(nonnull OSSystemExtensionProperties *)ext
 {
     //dbg msg
-    NSLog(@"method '%s' invoked with %@, %@ -> %@", __PRETTY_FUNCTION__, request.identifier, existing.bundleShortVersion, ext.bundleShortVersion);
+    if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+    {
+        NSLog(@"method '%s' invoked with %@, %@ -> %@", __PRETTY_FUNCTION__, request.identifier, existing.bundleShortVersion, ext.bundleShortVersion);
+    }
     
     return OSSystemExtensionReplacementActionReplace;
 }
@@ -144,7 +176,10 @@ bail:
 -(void)request:(nonnull OSSystemExtensionRequest *)request didFailWithError:(nonnull NSError *)error
 {
     //err msg
-    NSLog(@"ERROR: method '%s' invoked with %@, %@", __PRETTY_FUNCTION__, request, error);
+    if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+    {
+        NSLog(@"ERROR: method '%s' invoked with %@, %@", __PRETTY_FUNCTION__, request, error);
+    }
     
     //invoke reply
     self.replyBlock(NO);
@@ -161,13 +196,19 @@ bail:
     BOOL completed = NO;
     
     //dbg msg
-    NSLog(@"method '%s' invoked with %@, %ld", __PRETTY_FUNCTION__, request, (long)result);
+    if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+    {
+        NSLog(@"method '%s' invoked with %@, %ld", __PRETTY_FUNCTION__, request, (long)result);
+    }
    
     //issue/error?
     if(OSSystemExtensionRequestCompleted != result)
     {
         //err msg
-        NSLog(@"ERROR: result %ld is an unexpected result for system extension request", (long)result);
+        if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+        {
+            NSLog(@"ERROR: result %ld is an unexpected result for system extension request", (long)result);
+        }
         
         //bail
         goto bail;
@@ -190,7 +231,10 @@ bail:
 -(void)requestNeedsUserApproval:(nonnull OSSystemExtensionRequest *)request {
     
     //dbg msg
-    NSLog(@"method '%s' invoked with %@", __PRETTY_FUNCTION__, request);
+    if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+    {
+        NSLog(@"method '%s' invoked with %@", __PRETTY_FUNCTION__, request);
+    }
     
     return;
 }

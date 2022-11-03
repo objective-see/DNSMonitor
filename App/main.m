@@ -6,97 +6,221 @@
 //  Copyright (c) 2020 Objective-See. All rights reserved.
 //
 
-@import Foundation;
-#include <signal.h>
+#import "main.h"
 
-#import "consts.h"
-#import "Extension.h"
-#import "LogMonitor.h"
-
-@import Cocoa;
-@import OSLog;
-
-void startExtension(void (^)(BOOL));
-
-//load the extension
-// will generate popup for user that they must approve
-void startExtension(void (^reply)(BOOL))
-{
-    //extension
-    Extension* extension = nil;
-
-    //init extension object
-    extension = [[Extension alloc] init];
+//main interface
+// start extension
+// ...then dump all msgs to stdout
+int main(int argc, const char * argv[]) {
     
-    //kick off extension activation request
-    [extension toggleExtension:ACTION_ACTIVATE reply:^(BOOL started) {
+    //status
+    int status = 0;
+    
+    //dispatch source
+    dispatch_source_t source = 0;
+    
+    //pool
+    @autoreleasepool {
         
-        //once this is started
-        //make request to start network extension
-        if(YES == started)
+        //args
+        NSArray* arguments = nil;
+        
+        //parent
+        NSString* parent = nil;
+        
+        //log monitor
+        LogMonitor* logMonitor = nil;
+        
+        //log predicate
+        NSPredicate* predicate = nil;
+        
+        //grab args
+        arguments = [[NSProcessInfo processInfo] arguments];
+        
+        //handle '-h' or '-help'
+        if( (YES == [arguments containsObject:@"-h"]) ||
+            (YES == [arguments containsObject:@"-help"]) )
         {
-            //start
-            [extension startNetworkExtension:^(BOOL started) {
-                
-                //reply
-                reply(started);
-                
-            }];
+            //print usage
+            usage();
+            
+            //done
+            goto bail;
         }
-             
-    }];
+        
+        //get parent
+        parent = getParentBundleID();
+        
+        //dbg msg
+        if(YES != [arguments containsObject:@"-json"])
+        {
+            NSLog(@"Started %s (pid: %d, parent: %@) ", BUNDLE_ID, getpid(), parent);
+        }
+        
+        //CHECK 0x1:
+        // must be launched via Terminal (or iTerm)
+        // if launched via Finder, Dock etc, show main app logic
+        // ...which instructs user how to run to run via Terminal
+        if( (YES == [parent isEqualTo:@"com.apple.dock"]) ||
+            (YES == [parent isEqualTo:@"com.apple.finder"]) )
+        {
+            //main app
+            return NSApplicationMain(argc, argv);
+        }
     
-    return;
+        //CHECK 0x2:
+        // must be run from /Applications as we're using a System Extension
+        if(YES != [NSBundle.mainBundle.bundlePath isEqualToString:[@"/Applications" stringByAppendingPathComponent:APP_NAME]])
+        {
+            //set
+            status = -1;
+         
+             //err msg
+             if(YES != [arguments containsObject:@"-json"])
+             {
+                 //err msg
+                 NSLog(@"\n\nERROR: As %@ uses a System Extension, Apple requires it must be located in /Applications\n\n", [APP_NAME stringByDeletingPathExtension]);
+             }
+             //json error msg
+             else
+             {
+                 //err msg
+                 printf("{\"ERROR\": \"%s must be located in /Applications\"}\n", [APP_NAME stringByDeletingPathExtension].UTF8String);
+             }
+            
+             goto bail;
+        }
+        
+        //init predicate to capture log message from extension
+        predicate = [NSPredicate predicateWithFormat:@"subsystem='com.objective-see.dnsmonitor'"];
+        
+        //init log monitor
+        logMonitor = [[LogMonitor alloc] init];
+        
+        //start log monitor
+        // ...and (forevers) print out any messages from extension
+        [logMonitor start:predicate level:Log_Level_Default eventHandler:^(OSLogEventProxy* event) {
+            
+            //json
+            if(YES == [arguments containsObject:@"-json"])
+            {
+                //start
+                if(0 == recordCount)
+                {
+                    printf("[");
+                }
+                
+                //display record separator
+                else
+                {
+                    printf(",");
+                }
+                
+                //print / flush
+                printf("%s", event.composedMessage.UTF8String);
+                fflush(stdout);
+                
+            }
+            //print
+            // ...via NSLog()
+            else
+            {
+                //dbg msg from extension
+                NSLog(@"%@", event.composedMessage);
+            }
+            
+            //inc
+            recordCount++;
+            
+        }];
+        
+        //ignore SIGINT
+        // as we implement our own to unload the ext
+        signal(SIGINT, SIG_IGN);
+        
+        //create dispatch handler for SIGINT
+        source = dispatch_source_create(DISPATCH_SOURCE_TYPE_SIGNAL, SIGINT, 0, dispatch_get_main_queue());
+        
+        //handle SIGINT
+        // stop (deactivate extension)
+        dispatch_source_set_event_handler(source, ^{
+            
+            //json
+            if(YES == [arguments containsObject:@"-json"])
+            {
+                //end/flush
+                printf("]");
+                fflush(stdout);
+            }
+            
+            //stop
+            stopExtension();
+            
+            //bye!
+            exit(0);
+            
+        });
+        
+        //resume
+        dispatch_resume(source);
+        
+        //start extension
+        startExtension(^(BOOL started){
+        
+            //error?
+            if(YES != started)
+            {
+                //err msg
+                if(YES != [arguments containsObject:@"-json"])
+                {
+                    //dbg msg
+                    NSLog(@"ERROR: failed to start System/Network Extension");
+                }
+                //json error msg
+                else
+                {
+                    //err msg
+                    printf("{\"ERROR\": \"Failed to start System/Network Extension\"}\n");
+                }
+                
+                //bye
+                exit(-1);
+            }
+            
+        });
+        
+        //run
+        // cmd+c to quit
+        [NSRunLoop.currentRunLoop run];
+    }
     
+bail:
+    
+    return status;
 }
 
-//stop extension
-BOOL stopExtension(void)
+//print usage
+void usage()
 {
-    //flag
-    __block BOOL wasStopped = NO;
+    //name
+    NSString* name = nil;
     
-    //extension
-    Extension* extension = nil;
+    //version
+    NSString* version = nil;
     
-    //wait semaphore
-    dispatch_semaphore_t semaphore = 0;
+    //extract name
+    name = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"];
     
-    //init extension object
-    extension = [[Extension alloc] init];
+    //extract version
+    version = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+
+    //usage
+    printf("\n%s (v%s) usage:\n", name.UTF8String, version.UTF8String);
+    printf(" -h or -help      display this usage info\n");
+    printf(" -json            output is formatted as JSON\n");
+    printf(" -pretty          JSON output is 'pretty-printed'\n\n");
     
-    //init wait semaphore
-    semaphore = dispatch_semaphore_create(0);
-    
-    //kick off extension deactivation request
-    [extension toggleExtension:ACTION_DEACTIVATE reply:^(BOOL toggled)
-    {
-        //error
-        // user likely cancelled
-        if(YES != toggled)
-        {
-            //err msg
-            NSLog(@"ERROR: failed to deactivate System Extension");
-        }
-        //happy
-        else
-        {
-            //dbg msg
-            NSLog(@"deactived System Extension");
-            
-            //happy
-            wasStopped = YES;
-        }
-        
-        //signal semaphore
-        dispatch_semaphore_signal(semaphore);
-        
-    }];
-    
-    //wait for extension semaphore
-    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
-    
-    return wasStopped;
+    return;
 }
 
 //get bundle of (real) parent
@@ -141,118 +265,90 @@ NSString* getParentBundleID(void)
 bail:
     
     return parentBundleID;
-    
 }
 
-//main interface
-// start extension and dump msg stdout
-int main(int argc, const char * argv[]) {
+//load the extension
+// will generate popup for user that they must approve
+void startExtension(void (^reply)(BOOL))
+{
+    //extension
+    Extension* extension = nil;
+
+    //init extension object
+    extension = [[Extension alloc] init];
     
-    //status
-    int status = 0;
-    
-    //dispatch source
-    dispatch_source_t source = 0;
-    
-    //pool
-    @autoreleasepool {
+    //kick off extension activation request
+    [extension toggleExtension:ACTION_ACTIVATE reply:^(BOOL started) {
         
-        //parent
-        NSString* parent = nil;
-        
-        //log monitor
-        LogMonitor* logMonitor = nil;
-        
-        //log predicate
-        NSPredicate* predicate = nil;
-        
-        //get parent
-        parent = getParentBundleID();
-        
-        //dbg msg
-        NSLog(@"started %s (pid: %d, parent: %@) ", BUNDLE_ID, getpid(), parent);
-        
-        //CHECK 0x1:
-        // must be launched via Terminal (or iTerm)
-        // if launched via Finder, Dock etc, show main app logic
-        // ...which instructs user how to run to run via Terminal
-        if( (YES == [parent isEqualTo:@"com.apple.dock"]) ||
-            (YES == [parent isEqualTo:@"com.apple.finder"]) )
+        //once this is started
+        //make request to start network extension
+        if(YES == started)
         {
-            //main app
-            return NSApplicationMain(argc, argv);
-        }
-        
-        //CHECK 0x2:
-        // must be run from /Applications as we're using a System Extension
-        if(YES != [NSBundle.mainBundle.bundlePath isEqualToString:[@"/Applications" stringByAppendingPathComponent:APP_NAME]])
-        {
-            //set
-            status = -1;
-            
-            //err msg
-            NSLog(@"\n\nERROR: As %@ uses a System Extension, Apple requires it must be located in /Applications\n\n", [APP_NAME stringByDeletingPathExtension]);
-            
-            goto bail;
-        }
-    
-        //init predicate to capture log message from extension
-        predicate = [NSPredicate predicateWithFormat:@"subsystem='com.objective-see.dnsmonitor'"];
-        
-        //init log monitor
-        logMonitor = [[LogMonitor alloc] init];
-        
-        //start log monitor
-        [logMonitor start:predicate level:Log_Level_Info|Log_Level_Debug eventHandler:^(OSLogEventProxy* event) {
-            
-            //dbg msg from extension
-            NSLog(@"%@", event.composedMessage);
-            
-        }];
-        
-        //ignore SIGINT
-        // as we implement our own to unload the ext
-        signal(SIGINT, SIG_IGN);
-        
-        //create dispatch handler for SIGINT
-        source = dispatch_source_create(DISPATCH_SOURCE_TYPE_SIGNAL, SIGINT, 0, dispatch_get_main_queue());
-        
-        //handle SIGINT
-        // stop (deactivate extension)
-        dispatch_source_set_event_handler(source, ^{
-            
-            //stop
-            stopExtension();
-            
-            //bye!
-            exit(0);
-            
-        });
-        
-        //resume
-        dispatch_resume(source);
-        
-        //start extension
-        startExtension(^(BOOL started){
-        
-            //error?
-            if(YES != started)
-            {
-                //dbg msg
-                NSLog(@"ERROR: failed to start System/Network Extension");
+            //start
+            [extension startNetworkExtension:^(BOOL started) {
                 
-                //bye
-                exit(-1);
+                //reply
+                reply(started);
+                
+            }];
+        }
+             
+    }];
+    
+    return;
+}
+
+//stop extension
+BOOL stopExtension(void)
+{
+    //flag
+    __block BOOL wasStopped = NO;
+    
+    //extension
+    Extension* extension = nil;
+    
+    //wait semaphore
+    dispatch_semaphore_t semaphore = 0;
+    
+    //init extension object
+    extension = [[Extension alloc] init];
+    
+    //init wait semaphore
+    semaphore = dispatch_semaphore_create(0);
+    
+    //kick off extension deactivation request
+    [extension toggleExtension:ACTION_DEACTIVATE reply:^(BOOL toggled)
+    {
+        //error
+        // user likely cancelled
+        if(YES != toggled)
+        {
+            //err msg
+            if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+            {
+                NSLog(@"ERROR: failed to deactivate System Extension");
+            }
+        }
+        //happy
+        else
+        {
+            //dbg msg
+            if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+            {
+                NSLog(@"deactived System Extension");
             }
             
-        });
+            //happy
+            wasStopped = YES;
+        }
         
-        //run
-        // cmd+c to quit
-        [NSRunLoop.currentRunLoop run];
-    }
+        //signal semaphore
+        dispatch_semaphore_signal(semaphore);
+        
+    }];
     
-bail:
+    //wait for extension semaphore
+    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
     
-    return status;
+    return wasStopped;
 }
