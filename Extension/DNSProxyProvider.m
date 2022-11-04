@@ -836,7 +836,7 @@ bail:
         //host (IPv4)
         case ns_t_a:
             
-            //host
+            //check / add
             if(nil != (value = [NSString stringWithUTF8String:inet_ntoa(record->data.A->addr)]))
             {
                 //add
@@ -865,17 +865,50 @@ bail:
             
             break;
             
-        //cname
+        //cname etc
+        case ns_t_md:
+        case ns_t_mf:
         case ns_t_cname:
-        
-            //cname
-            if(nil != (value = [NSString stringWithUTF8String:record->data.CNAME->name]))
+        case ns_t_mb:
+        case ns_t_mg:
+        case ns_t_mr:
+        case ns_t_ptr:
+        case ns_t_ns:
+            
+            //check / add
+            if(NULL != record->data.CNAME->name)
             {
                 //add
-                formattedRecord[@"Canonical Name"] = value;
+                formattedRecord[@"Canonical Name"] = [NSString stringWithUTF8String:record->data.CNAME->name];
             }
         
             break;
+        
+        //txt
+        case ns_t_txt:
+        {
+            //txt records
+            NSMutableArray* txtRecords = nil;
+            
+            //init
+            txtRecords = [NSMutableArray array];
+        
+            //add each TXT
+            for(int i = 0; i < record->data.TXT->string_count; i++)
+            {
+                //check / add
+                if(NULL != record->data.TXT->strings[i])
+                {
+                    //add
+                    [txtRecords addObject:[NSString stringWithUTF8String:record->data.TXT->strings[i]]];
+                }
+            }
+            
+            //add additional records
+            formattedRecord[@"TXT Records"] = txtRecords;
+            
+            break;
+        }
             
         default:
             break;

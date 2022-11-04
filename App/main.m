@@ -67,7 +67,7 @@ int main(int argc, const char * argv[]) {
             //main app
             return NSApplicationMain(argc, argv);
         }
-    
+        
         //CHECK 0x2:
         // must be run from /Applications as we're using a System Extension
         if(YES != [NSBundle.mainBundle.bundlePath isEqualToString:[@"/Applications" stringByAppendingPathComponent:APP_NAME]])
@@ -90,7 +90,7 @@ int main(int argc, const char * argv[]) {
             
              goto bail;
         }
-        
+    
         //init predicate to capture log message from extension
         predicate = [NSPredicate predicateWithFormat:@"subsystem='com.objective-see.dnsmonitor'"];
         
