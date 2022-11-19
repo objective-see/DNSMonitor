@@ -8,8 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		CD2ED2402895971B008D6F39 /* LogMonitor.m in Sources */ = {isa = PBXBuildFile; fileRef = CD2ED23E2895971A008D6F39 /* LogMonitor.m */; };
-		CD4C89AC28B1DB77006E488E /* libresolv.9.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = CD4C89AB28B1DB77006E488E /* libresolv.9.dylib */; };
-		CD4C89AD28B1DB77006E488E /* libresolv.9.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = CD4C89AB28B1DB77006E488E /* libresolv.9.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		CD78BF3B28905EB200FBA1E4 /* DNSProxyProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = CD78BF3A28905EB200FBA1E4 /* DNSProxyProvider.m */; };
 		CD97494628F1DAA000950696 /* Process.m in Sources */ = {isa = PBXBuildFile; fileRef = CD97494528F1DAA000950696 /* Process.m */; };
 		CDB2CC1D24D61A4E00D0EECE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = CDB2CC1C24D61A4E00D0EECE /* AppDelegate.m */; };
@@ -20,6 +18,7 @@
 		CDB2CC3924D61B3900D0EECE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = CDB2CC3824D61B3900D0EECE /* main.m */; };
 		CDB2CC4424DBE48100D0EECE /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CDB2CC3224D61B3900D0EECE /* NetworkExtension.framework */; };
 		CDBF3DBF28903C4B00A1C51B /* com.objective-see.dnsmonitor.extension.systemextension in Embed System Extensions */ = {isa = PBXBuildFile; fileRef = CDB2CC3024D61B3900D0EECE /* com.objective-see.dnsmonitor.extension.systemextension */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CDBF570B29287DF1001CACD7 /* libresolv.9.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = CDBF570A29287DF1001CACD7 /* libresolv.9.tbd */; };
 		CDC378C7250C66C300314064 /* Extension.m in Sources */ = {isa = PBXBuildFile; fileRef = CDC378C6250C66C300314064 /* Extension.m */; };
 /* End PBXBuildFile section */
 
@@ -40,7 +39,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				CD4C89AD28B1DB77006E488E /* libresolv.9.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -61,7 +59,6 @@
 /* Begin PBXFileReference section */
 		CD2ED23E2895971A008D6F39 /* LogMonitor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LogMonitor.m; sourceTree = "<group>"; };
 		CD2ED23F2895971B008D6F39 /* LogMonitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LogMonitor.h; sourceTree = "<group>"; };
-		CD4C89AB28B1DB77006E488E /* libresolv.9.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libresolv.9.dylib; path = Libs/libresolv.9.dylib; sourceTree = "<group>"; };
 		CD5F34382910599800568753 /* main.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = main.h; sourceTree = "<group>"; };
 		CD78BF3928905EB200FBA1E4 /* DNSProxyProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DNSProxyProvider.h; sourceTree = "<group>"; };
 		CD78BF3A28905EB200FBA1E4 /* DNSProxyProvider.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DNSProxyProvider.m; sourceTree = "<group>"; };
@@ -82,6 +79,7 @@
 		CDB2CC3824D61B3900D0EECE /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		CDB2CC3A24D61B3900D0EECE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CDB2CC3B24D61B3900D0EECE /* Extension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Extension.entitlements; sourceTree = "<group>"; };
+		CDBF570A29287DF1001CACD7 /* libresolv.9.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.9.tbd; path = usr/lib/libresolv.9.tbd; sourceTree = SDKROOT; };
 		CDC378C5250C66C200314064 /* Extension.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Extension.h; sourceTree = "<group>"; };
 		CDC378C6250C66C300314064 /* Extension.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Extension.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -99,7 +97,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CD4C89AC28B1DB77006E488E /* libresolv.9.dylib in Frameworks */,
+				CDBF570B29287DF1001CACD7 /* libresolv.9.tbd in Frameworks */,
 				CDB2CC3324D61B3900D0EECE /* NetworkExtension.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -165,7 +163,7 @@
 		CDB2CC3124D61B3900D0EECE /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				CD4C89AB28B1DB77006E488E /* libresolv.9.dylib */,
+				CDBF570A29287DF1001CACD7 /* libresolv.9.tbd */,
 				CDB2CC3224D61B3900D0EECE /* NetworkExtension.framework */,
 			);
 			name = Frameworks;
