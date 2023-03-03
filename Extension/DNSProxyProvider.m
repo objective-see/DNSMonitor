@@ -9,7 +9,10 @@
 //https://developer.apple.com/forums/thread/75893
 
 #import <nameser.h>
+#import <libproc.h>
 #import <dns_util.h>
+#import <bsm/libbsm.h>
+
 #import "DNSProxyProvider.h"
 
 #define DNS_FLAGS_QR_MASK  0x8000
@@ -25,6 +28,10 @@
 
 #define INET_NTOP_AF_INET_OFFSET 4
 #define INET_NTOP_AF_INET6_OFFSET 8
+
+#define PROCESS_ID @"processID"
+#define PROCESS_PATH @"processPath"
+#define PROCESS_SIGNING_ID @"processSigningID"
 
 /* GLOBALS */
 
@@ -78,14 +85,12 @@ extern NSMutableArray* appArgs;
 }
 
 //handle new flow
-// for now, we only support UDP
 -(BOOL)handleNewFlow:(NEAppProxyFlow *)flow
 {
     //flag
     BOOL handled = NO;
-    
+
     //is a UDP flow?
-    // if so, open connection/handle flow
     if(YES == [flow isKindOfClass:[NEAppProxyUDPFlow class]])
     {
         //open flow
@@ -95,7 +100,7 @@ extern NSMutableArray* appArgs;
             {
                 //read from flow
                 // and send to remote endpoint
-                [self flowOut:(NEAppProxyUDPFlow*)flow];
+                [self flowOutUDP:(NEAppProxyUDPFlow*)flow];
             }
             
         }];
@@ -103,8 +108,132 @@ extern NSMutableArray* appArgs;
         //set flag
         handled = YES;
     }
-    //TODO: handle TCP
-    //flow is not a UDP flow
+    
+    //is a TCP flow?
+    else if(YES == [flow isKindOfClass:[NEAppProxyTCPFlow class]])
+    {
+        //tcp
+        NEAppProxyTCPFlow* tcpFlow = NULL;
+        
+        //type cast
+        tcpFlow = (NEAppProxyTCPFlow*)flow;
+        
+        //(remote) connection
+        nw_connection_t remoteConnection = nil;
+        
+        //(remote) endpoint
+        nw_endpoint_t remoteEndpoint = nil;
+        
+        //create an (nw_)endpoint
+        remoteEndpoint = nw_endpoint_create_host(((NWHostEndpoint*)tcpFlow.remoteEndpoint).hostname.UTF8String, ((NWHostEndpoint*)tcpFlow.remoteEndpoint).port.UTF8String);
+        
+        //create connection
+        remoteConnection = nw_connection_create(remoteEndpoint, nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION));
+        
+        //set queue
+        nw_connection_set_queue(remoteConnection, dispatch_get_main_queue());
+        
+        //set handler
+        // will be invoked with various states
+        nw_connection_set_state_changed_handler(remoteConnection, ^(nw_connection_state_t state, nw_error_t error) {
+            
+            //error?
+            if(NULL != error)
+            {
+                //err msg
+                if(YES != [appArgs containsObject:@"-json"])
+                {
+                    os_log_error(logHandle, "ERROR: 'nw_connection_set_state_changed_handler' failed with %d", nw_error_get_error_code(error));
+                }
+                
+                return;
+            }
+            
+            //handle state
+            // mostly only care about "ready"
+            switch (state) {
+                    
+                //ready?
+                // send datagram & read (response)
+                case nw_connection_state_ready: {
+                    
+                    //local host
+                    NSString* localHost = nil;
+                    
+                    //local port
+                    NSString* localPort = nil;
+                    
+                    //(local) endpoint
+                    nw_endpoint_t localEndpoint = nil;
+                    
+                    //local host endpoint
+                    NWHostEndpoint *localHostEndpoint = nil;
+                    
+                    //grab local endpoint
+                    localEndpoint = nw_path_copy_effective_local_endpoint(nw_connection_copy_current_path(remoteConnection));
+                    
+                    //extract local host/port
+                    localHost = [NSString stringWithUTF8String:nw_endpoint_get_hostname(localEndpoint)];
+                    localPort = [NSString stringWithFormat:@"%d", nw_endpoint_get_port(localEndpoint)];
+                    
+                    
+                    //create local host endpoint
+                    localHostEndpoint = [NWHostEndpoint endpointWithHostname:localHost port:localPort];
+                    
+                    //open flow
+                    [flow openWithLocalEndpoint:localHostEndpoint completionHandler:^(NSError *error) {
+                            
+                        //error?
+                        if(nil != error)
+                        {
+                            //err msg
+                            if(YES != [appArgs containsObject:@"-json"])
+                            {
+                                os_log_error(logHandle, "openWithLocalEndpoint ERROR: %{public}@", error);
+                            }
+            
+                            return;
+                        }
+                        
+                        //no error
+                        // read and and send to remote endpoint
+                        [self flowOutTCP:(NEAppProxyTCPFlow*)flow connection:remoteConnection];
+                        [self flowInTCP:(NEAppProxyTCPFlow*)flow connection:remoteConnection];
+                        
+                    
+                    }];
+                    
+                    break;
+                }
+                    
+                //waiting
+                case nw_connection_state_waiting:
+                    break;
+                    
+                //cancelled
+                case nw_connection_state_cancelled:
+                    nw_connection_cancel(remoteConnection);
+                    break;
+                    
+                    //failed
+                case nw_connection_state_failed:
+                    nw_connection_cancel(remoteConnection);
+                    break;
+                    
+                default:
+                    break;
+            }
+        });
+        
+        //start
+        // will trigger state changed
+        nw_connection_start(remoteConnection);
+     
+        //set flag
+        handled = YES;
+    }
+    
+    //flow is neither TCP nor UDP
     else
     {
         //err msg
@@ -123,12 +252,12 @@ extern NSMutableArray* appArgs;
         //set flag
         handled = NO;
     }
-    
+        
     return handled;
 }
 
 //read from (remote) endpoint, then write to flow
--(void)flowIn:(NEAppProxyUDPFlow*)flow connection:(nw_connection_t)connection endpoint:(NWHostEndpoint*)endpoint
+-(void)flowInUDP:(NEAppProxyUDPFlow*)flow connection:(nw_connection_t)connection endpoint:(NWHostEndpoint*)endpoint
 {
     //read from (remote) connection
     nw_connection_receive(connection, 1, UINT32_MAX,
@@ -155,11 +284,11 @@ extern NSMutableArray* appArgs;
                 packet = (NSData*)content;
                 
                 //parse & print
-                parsedPacket = dns_parse_packet([packet bytes], (uint32_t)packet.length);
+                parsedPacket = dns_parse_packet(packet.bytes, (uint32_t)packet.length);
                 if(NULL != parsedPacket)
                 {
                     //print
-                    [self printPacket:parsedPacket];
+                    [self printPacket:parsedPacket flow:flow];
                     
                     //free
                     dns_free_reply(parsedPacket);
@@ -197,10 +326,10 @@ extern NSMutableArray* appArgs;
 }
 
 //read from flow, then write to (remote) endpoint
--(void)flowOut:(NEAppProxyUDPFlow*)flow {
+-(void)flowOutUDP:(NEAppProxyUDPFlow*)flow {
 
     //read from flow
-    [flow readDatagramsWithCompletionHandler:^(NSArray * datagrams, NSArray * endpoints, NSError *error){
+    [flow readDatagramsWithCompletionHandler:^(NSArray* datagrams, NSArray* endpoints, NSError *error){
         
         //error?
         if(nil != error)
@@ -242,11 +371,11 @@ extern NSMutableArray* appArgs;
             packet = datagrams[i];
             
             //parse & print
-            parsedPacket = dns_parse_packet([packet bytes], (uint32_t)packet.length);
+            parsedPacket = dns_parse_packet(packet.bytes, (uint32_t)packet.length);
             if(NULL != parsedPacket)
             {
                 //print
-                [self printPacket:parsedPacket];
+                [self printPacket:parsedPacket flow:flow];
                 
                 //free
                 dns_free_reply(parsedPacket);
@@ -256,7 +385,7 @@ extern NSMutableArray* appArgs;
             endpoint = nw_endpoint_create_host(((NWHostEndpoint*)endpoints[i]).hostname.UTF8String, ((NWHostEndpoint*)endpoints[i]).port.UTF8String);
             
             //create connection
-            connection = nw_connection_create(endpoint, nw_parameters_create_secure_udp( NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION));
+            connection = nw_connection_create(endpoint, nw_parameters_create_secure_udp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION));
             
             //set queue
             nw_connection_set_queue(connection, dispatch_get_main_queue());
@@ -309,7 +438,7 @@ extern NSMutableArray* appArgs;
                         });
                         
                         //now read from remote connection and write to (local) flow
-                        [self flowIn:flow connection:connection endpoint:endpoints[i]];
+                        [self flowInUDP:flow connection:connection endpoint:endpoints[i]];
                         
                         break;
                     }
@@ -343,9 +472,277 @@ extern NSMutableArray* appArgs;
     return;
 }
 
+//read from (remote) endpoint, then write to flow
+-(void)flowInTCP:(NEAppProxyTCPFlow*)flow connection:(nw_connection_t)connection
+{
+    //read from (remote) connection
+    nw_connection_receive(connection, 1, UINT32_MAX,
+        ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t receive_error) {
+        
+            //length
+            uint16_t length = 0;
+        
+            //packet
+            const void* packet = NULL;
+        
+            //parsed packet
+            dns_reply_t* parsedPacket = NULL;
+        
+            //error?
+            if(nil != receive_error)
+            {
+                //err msg
+                if(YES != [appArgs containsObject:@"-json"])
+                {
+                    os_log_error(logHandle, "ERROR: nw_connection_receive failed with %d", nw_error_get_error_code(receive_error));
+                }
+                return;
+            }
+        
+            //no length?
+            // just ingore...
+            if(((NSData*)content).length < 2)
+            {
+                return;
+            }
+        
+            //extact bytes
+            memcpy(&length, ((NSData*)content).bytes, sizeof(uint16_t));
+        
+            //convert
+            length = ntohs(length);
+        
+            //not whole packet?
+            // for now, just ignore
+            if(((NSData*)content).length < sizeof(uint16_t) + length)
+            {
+                //err msg
+                //err msg
+                if(YES != [appArgs containsObject:@"-json"])
+                {
+                    os_log_error(logHandle, "ERROR: reported length %d, greater than packet length %lu", length, (unsigned long)((NSData*)content).length);
+                }
+                return;
+            }
+        
+            //packet data
+            // comes right after header
+            packet = ((NSData*)content).bytes+sizeof(uint16_t);
+        
+            //parse & print
+            parsedPacket = dns_parse_packet(packet, length);
+            if(NULL != parsedPacket)
+            {
+                //print
+                [self printPacket:parsedPacket flow:flow];
+                
+                //free
+                dns_free_reply(parsedPacket);
+            }
+        
+            //got data to write?
+            if(0 != ((NSData*)content).length)
+            {
+                //write to flow
+                [flow writeData:(NSData*)content withCompletionHandler:^(NSError * _Nullable error) {
+                    
+                    //error?
+                    if(nil != error)
+                    {
+                        //err msg
+                        if(YES != [appArgs containsObject:@"-json"])
+                        {
+                            os_log_error(logHandle, "writeDatagrams ERROR: %{public}@", error);
+                        }
+                        return;
+                    }
+                    
+                    //no error
+                    // setup another read
+                    [self flowInTCP:flow connection:connection];
+                }];
+            }
+    
+            //complete?
+            if(YES == is_complete)
+            {
+                //close
+                nw_connection_set_state_changed_handler(connection, NULL);
+                nw_connection_cancel(connection);
+                
+                return;
+            }
+        
+            });
+        
+    return;
+    
+}
+
+//read from flow, then write to (remote) endpoint
+-(void)flowOutTCP:(NEAppProxyTCPFlow*)flow connection:(nw_connection_t)remoteConnection
+{
+    //read from local flow
+    [flow readDataWithCompletionHandler:^(NSData * _Nullable data, NSError * _Nullable error) {
+        
+        //length
+        uint16_t length = 0;
+        
+        //packet
+        const void* packet = NULL;
+        
+        //parsed packet
+        dns_reply_t* parsedPacket = NULL;
+        
+        //error?
+        if(nil != error)
+        {
+            //err msg
+            if(YES != [appArgs containsObject:@"-json"])
+            {
+                os_log_error(logHandle, "ERROR: 'readDataWithCompletionHandler' failed with %{public}@", error);
+            }
+            
+            return;
+        }
+        
+        //ended?
+        // close up
+        if(0 == data.length)
+        {
+            //close
+            [flow closeReadWithError:error];
+            return;
+        }
+        
+        //no length?
+        // just ingore...
+        if(data.length < 2)
+        {
+            return;
+        }
+        
+        //extact bytes
+        memcpy(&length, data.bytes, sizeof(uint16_t));
+        
+        //convert
+        length = ntohs(length);
+        
+        //not whole packet?
+        // for now, just ignore
+        if(data.length < sizeof(uint16_t) + length)
+        {
+            //err msg
+            //err msg
+            if(YES != [appArgs containsObject:@"-json"])
+            {
+                os_log_error(logHandle, "ERROR: reported length %d, greater than packet length %lu", length, (unsigned long)data.length);
+            }
+            return;
+        }
+        
+        //packet data
+        // comes right after header
+        packet = data.bytes+sizeof(uint16_t);
+        
+        //parse & print
+        parsedPacket = dns_parse_packet(packet, length);
+        if(NULL != parsedPacket)
+        {
+            //print
+            [self printPacket:parsedPacket flow:flow];
+            
+            //free
+            dns_free_reply(parsedPacket);
+        }
+        
+        //data
+        dispatch_data_t dispatchData = NULL;
+        
+        //create dispatch data
+        dispatchData = dispatch_data_create(data.bytes, data.length, nil, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+        
+        //send to remote endpoint
+        nw_connection_send(remoteConnection, dispatchData, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t  _Nullable error) {
+            
+            //error
+            if(NULL != error)
+            {
+                //close
+                [flow closeWriteWithError:nil];
+                
+                //err msg
+                if(YES != [appArgs containsObject:@"-json"])
+                {
+                    os_log_error(logHandle, "ERROR: 'nw_connection_send' failed with %d", nw_error_get_error_code(error));
+                }
+                
+                return;
+            }
+            
+            //no error
+            // setup another read from flow / send
+            [self flowOutTCP:flow connection:remoteConnection];
+            
+        });
+    
+    }];
+
+    return;
+}
+
+//get process info
+// inspired by https://wordpress.lapw.org/it/framework/network-extension/
+-(NSMutableDictionary*)getProcessInfo:(NEAppProxyFlow*)flow
+{
+    //process info
+    NSMutableDictionary* processInfo = nil;
+
+    //audit token
+    audit_token_t auditToken = {0,};
+    
+    //pid
+    pid_t pid = 0;
+    
+    //path
+    char path[PROC_PIDPATHINFO_MAXSIZE] = {0,};
+    
+    //init
+    processInfo = [NSMutableDictionary dictionary];
+    
+    //save signing id
+    if(0 != flow.metaData.sourceAppSigningIdentifier.length)
+    {
+        //save
+        processInfo[PROCESS_SIGNING_ID] = flow.metaData.sourceAppSigningIdentifier;
+    }
+        
+    //extract audit token
+    for(int i=0; i< (flow.metaData.sourceAppAuditToken.length / sizeof(int)); i++)
+    {
+        //extract
+        auditToken.val[i] = ((unsigned int*)flow.metaData.sourceAppAuditToken.bytes)[i];
+    }
+
+    //get pid
+    pid = audit_token_to_pid(auditToken);
+    
+    //save pid
+    processInfo[PROCESS_ID] = [NSNumber numberWithUnsignedInt:pid];
+
+    //get path
+    if(proc_pidpath(pid, path, PROC_PIDPATHINFO_MAXSIZE) > 0)
+    {
+        //save path
+        processInfo[PROCESS_PATH] = [NSString stringWithUTF8String:path];
+    }
+    
+    return processInfo;
+}
+
 //print a packet
 // app's args control verbosity/format
--(void)printPacket:(dns_reply_t*)packet
+-(void)printPacket:(dns_reply_t*)packet flow:(NEAppProxyFlow*)flow
 {
     //file pointer
     FILE *fp = NULL;
@@ -356,24 +753,35 @@ extern NSMutableArray* appArgs;
     //size
     size_t length = 0;
     
+    //process info
+    NSMutableDictionary* processInfo = nil;
+    
+    //get process info
+    processInfo = [self getProcessInfo:flow];
+    
     //json?
     if(YES == [appArgs containsObject:@"-json"])
     {
         //output as JSON
-        os_log(logHandle, "%{public}@", [self toJSON:packet]);
+        os_log(logHandle, "%{public}@", [self toJSON:packet processInfo:processInfo]);
     }
     
-    //output packet via dns_print_reply
+    //output process, then packet via dns_print_reply()
     else
     {
+        //output to log
+        os_log(logHandle, "PROCESS:\n%{public}@\n", processInfo);
+        
         //open fp stream
         fp = open_memstream((char **)&bytes, &length);
         
         //print to stream
         dns_print_reply(packet, fp, 0xFFFF);
         
-        //flush/rewind
+        //flush
         fflush(fp);
+        
+        //rewind
         rewind(fp);
         
         //output to log
@@ -388,7 +796,7 @@ extern NSMutableArray* appArgs;
 
 //convert a packet to JSON
 // note, this is basically dns_print_reply, but json-ified
--(NSString*)toJSON:(dns_reply_t*)packet
+-(NSString*)toJSON:(dns_reply_t*)packet processInfo:(NSMutableDictionary*)processInfo
 {
     //output
     NSString* json = nil;
@@ -760,7 +1168,7 @@ extern NSMutableArray* appArgs;
     @try
     {
         //serialize
-        data = [NSJSONSerialization dataWithJSONObject:formattedPacket options:options error:&error];
+        data = [NSJSONSerialization dataWithJSONObject:@{@"Process":processInfo, @"Packet":formattedPacket} options:options error:&error];
         if(nil == data)
         {
             //bail

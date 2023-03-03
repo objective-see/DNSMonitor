@@ -10,6 +10,7 @@
 		CD2ED2402895971B008D6F39 /* LogMonitor.m in Sources */ = {isa = PBXBuildFile; fileRef = CD2ED23E2895971A008D6F39 /* LogMonitor.m */; };
 		CD78BF3B28905EB200FBA1E4 /* DNSProxyProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = CD78BF3A28905EB200FBA1E4 /* DNSProxyProvider.m */; };
 		CD97494628F1DAA000950696 /* Process.m in Sources */ = {isa = PBXBuildFile; fileRef = CD97494528F1DAA000950696 /* Process.m */; };
+		CDAA4BFC29AD8BA0003F46D9 /* libbsm.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = CDAA4BFB29AD8BA0003F46D9 /* libbsm.tbd */; };
 		CDB2CC1D24D61A4E00D0EECE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = CDB2CC1C24D61A4E00D0EECE /* AppDelegate.m */; };
 		CDB2CC1F24D61A5000D0EECE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CDB2CC1E24D61A5000D0EECE /* Assets.xcassets */; };
 		CDB2CC2224D61A5000D0EECE /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = CDB2CC2024D61A5000D0EECE /* MainMenu.xib */; };
@@ -66,6 +67,7 @@
 		CD97494728F1DAD200950696 /* Process.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Process.h; sourceTree = "<group>"; };
 		CDA1363A24EF4DA0005AD424 /* consts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = consts.h; path = Shared/consts.h; sourceTree = SOURCE_ROOT; };
 		CDA136C624F0D7C3005AD424 /* consts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = consts.h; path = Shared/consts.h; sourceTree = SOURCE_ROOT; };
+		CDAA4BFB29AD8BA0003F46D9 /* libbsm.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libbsm.tbd; path = usr/lib/libbsm.tbd; sourceTree = SDKROOT; };
 		CDB2CC1824D61A4E00D0EECE /* DNSMonitor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DNSMonitor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CDB2CC1B24D61A4E00D0EECE /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		CDB2CC1C24D61A4E00D0EECE /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -97,6 +99,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CDAA4BFC29AD8BA0003F46D9 /* libbsm.tbd in Frameworks */,
 				CDBF570B29287DF1001CACD7 /* libresolv.9.tbd in Frameworks */,
 				CDB2CC3324D61B3900D0EECE /* NetworkExtension.framework in Frameworks */,
 			);
@@ -163,6 +166,7 @@
 		CDB2CC3124D61B3900D0EECE /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				CDAA4BFB29AD8BA0003F46D9 /* libbsm.tbd */,
 				CDBF570A29287DF1001CACD7 /* libresolv.9.tbd */,
 				CDB2CC3224D61B3900D0EECE /* NetworkExtension.framework */,
 			);

@@ -10,13 +10,6 @@
 //FOR LOGGING:
 // % log stream --level debug --predicate="subsystem='com.objective-see.dnsmonitor'"
 
-//TODO: for TCP
-// https://developer.apple.com/forums/thread/130834
-// https://developer.apple.com/documentation/networkextension/app_proxy_provider/handling_flow_copying?language=objc
-// create new connection (NWConnection), stateUpdateHandler, etc then:
-//  connection.receive, flow.write
-//  flow.readData, connection.send
-
 @import OSLog;
 @import Foundation;
 @import NetworkExtension;
@@ -50,7 +43,7 @@ int main(int argc, char *argv[])
     //start sysext
     // Apple notes, "call [this] as early as possible"
     [NEProvider startSystemExtensionMode];
-        
+            
     //dbg msg
     if(YES != [appArgs containsObject:@"-json"])
     {
