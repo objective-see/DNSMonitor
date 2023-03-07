@@ -277,6 +277,7 @@ extern NSMutableArray* appArgs;
                     {
                         os_log_error(logHandle, "ERROR: nw_connection_receive failed with %d", nw_error_get_error_code(receive_error));
                     }
+                    
                     return;
                 }
         
@@ -300,6 +301,9 @@ extern NSMutableArray* appArgs;
                     //error?
                     if(nil != error)
                     {
+                        //close
+                        [flow closeWriteWithError:nil];
+                        
                         //err msg
                         if(YES != [appArgs containsObject:@"-json"])
                         {
@@ -340,6 +344,9 @@ extern NSMutableArray* appArgs;
                 os_log_error(logHandle, "ERROR: 'readDatagramsWithCompletionHandler' failed with %{public}@", error);
             }
             
+            //close
+            [flow closeReadWithError:error];
+            
             return;
         }
         
@@ -349,7 +356,6 @@ extern NSMutableArray* appArgs;
         {
             //close
             [flow closeReadWithError:error];
-            [flow closeWriteWithError:error];
             return;
         }
         
@@ -496,6 +502,7 @@ extern NSMutableArray* appArgs;
                 {
                     os_log_error(logHandle, "ERROR: nw_connection_receive failed with %d", nw_error_get_error_code(receive_error));
                 }
+                
                 return;
             }
         
@@ -529,6 +536,9 @@ extern NSMutableArray* appArgs;
             // comes right after header
             packet = ((NSData*)content).bytes+sizeof(uint16_t);
         
+            //adjust length too
+            length -= sizeof(uint16_t);
+        
             //parse & print
             parsedPacket = dns_parse_packet(packet, length);
             if(NULL != parsedPacket)
@@ -554,6 +564,10 @@ extern NSMutableArray* appArgs;
                         {
                             os_log_error(logHandle, "writeDatagrams ERROR: %{public}@", error);
                         }
+                        
+                        //close
+                        [flow closeWriteWithError:nil];
+                        
                         return;
                     }
                     
@@ -603,6 +617,9 @@ extern NSMutableArray* appArgs;
                 os_log_error(logHandle, "ERROR: 'readDataWithCompletionHandler' failed with %{public}@", error);
             }
             
+            //close
+            [flow closeReadWithError:error];
+            
             return;
         }
         
@@ -633,7 +650,6 @@ extern NSMutableArray* appArgs;
         if(data.length < sizeof(uint16_t) + length)
         {
             //err msg
-            //err msg
             if(YES != [appArgs containsObject:@"-json"])
             {
                 os_log_error(logHandle, "ERROR: reported length %d, greater than packet length %lu", length, (unsigned long)data.length);
@@ -644,6 +660,9 @@ extern NSMutableArray* appArgs;
         //packet data
         // comes right after header
         packet = data.bytes+sizeof(uint16_t);
+        
+        //adjust length too
+        length -= sizeof(uint16_t);
         
         //parse & print
         parsedPacket = dns_parse_packet(packet, length);
@@ -668,9 +687,6 @@ extern NSMutableArray* appArgs;
             //error
             if(NULL != error)
             {
-                //close
-                [flow closeWriteWithError:nil];
-                
                 //err msg
                 if(YES != [appArgs containsObject:@"-json"])
                 {
@@ -1238,7 +1254,6 @@ bail:
     }
     
     //handle specific types
-    // TODO: add all/more types
     switch(record->dnstype)
     {
         //host (IPv4)

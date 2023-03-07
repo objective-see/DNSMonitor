@@ -57,7 +57,7 @@ int main(int argc, const char * argv[]) {
             NSLog(@"Started %s (pid: %d, parent: %@) ", BUNDLE_ID, getpid(), parent);
         }
         
-        /*
+    
         //CHECK 0x1:
         // must be launched via Terminal
         // if launched via Finder, Dock etc, show main app logic
@@ -91,7 +91,6 @@ int main(int argc, const char * argv[]) {
             
              goto bail;
         }
-        */
         
         //init predicate to capture log message from extension
         predicate = [NSPredicate predicateWithFormat:@"subsystem='com.objective-see.dnsmonitor'"];
