@@ -536,9 +536,6 @@ extern NSMutableArray* appArgs;
             // comes right after header
             packet = ((NSData*)content).bytes+sizeof(uint16_t);
         
-            //adjust length too
-            length -= sizeof(uint16_t);
-        
             //parse & print
             parsedPacket = dns_parse_packet(packet, length);
             if(NULL != parsedPacket)
@@ -660,9 +657,6 @@ extern NSMutableArray* appArgs;
         //packet data
         // comes right after header
         packet = data.bytes+sizeof(uint16_t);
-        
-        //adjust length too
-        length -= sizeof(uint16_t);
         
         //parse & print
         parsedPacket = dns_parse_packet(packet, length);
