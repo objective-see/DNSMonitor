@@ -23,7 +23,6 @@
     //dbg msg
     if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
     {
-        //dbg msg
         NSLog(@"toggling System Extension (action: %lu)", (unsigned long)action);
     }
     
@@ -110,6 +109,7 @@ bail:
             }
             
             reply(NO);
+            return;
         }
         
         //dbg msg
@@ -146,6 +146,7 @@ bail:
                 }
                 
                 reply(NO);
+                return;
             }
             
             reply(YES);
@@ -159,6 +160,7 @@ bail:
 #pragma mark -
 #pragma mark OSSystemExtensionRequest delegate methods
 
+
 //replace delegate method
 // always replaces, so return 'OSSystemExtensionReplacementActionReplace'
 -(OSSystemExtensionReplacementAction)request:(nonnull OSSystemExtensionRequest *)request actionForReplacingExtension:(nonnull OSSystemExtensionProperties *)existing withExtension:(nonnull OSSystemExtensionProperties *)ext
@@ -171,6 +173,7 @@ bail:
     
     return OSSystemExtensionReplacementActionReplace;
 }
+
 
 //error delegate method
 -(void)request:(nonnull OSSystemExtensionRequest *)request didFailWithError:(nonnull NSError *)error
@@ -186,6 +189,7 @@ bail:
 
     return;
 }
+
 
 //finish delegate method
 // install request? now can activate network ext

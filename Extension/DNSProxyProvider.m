@@ -29,9 +29,9 @@
 #define INET_NTOP_AF_INET_OFFSET 4
 #define INET_NTOP_AF_INET6_OFFSET 8
 
-#define PROCESS_ID @"processID"
-#define PROCESS_PATH @"processPath"
-#define PROCESS_SIGNING_ID @"processSigningID"
+#define PROCESS_ID @"pid"
+#define PROCESS_PATH @"path"
+#define PROCESS_SIGNING_ID @"signing ID"
 
 /* GLOBALS */
 
@@ -41,9 +41,21 @@ extern os_log_t logHandle;
 //(app's) arguments
 extern NSMutableArray* appArgs;
 
-@implementation DNSProxyProvider
+//DNS cache
+NSCache* dnsCache;
 
-@synthesize dnsCache;
+//invoked via SIGUSR1
+// dump the DNS cache to the system log
+void dumpDNSCache(int signal) {
+    
+    //dump cache
+    //TODO: dump it better
+    os_log(logHandle, "DNS Cache: %{public}@", dnsCache);
+    
+    return;
+}
+
+@implementation DNSProxyProvider
 
 //start proxy
 -(void)startProxyWithOptions:(NSDictionary<NSString *,id> *)options
@@ -53,7 +65,9 @@ extern NSMutableArray* appArgs;
     dnsCache = [[NSCache alloc] init];
             
     //set cache limit
-    self.dnsCache.countLimit = 1024;
+    dnsCache.countLimit = 1024;
+    
+    //TODO: store questions/answers in cache!
     
     //dbg msg
     if(YES != [appArgs containsObject:@"-json"])
@@ -61,11 +75,111 @@ extern NSMutableArray* appArgs;
         os_log(logHandle, "method '%s' invoked", __PRETTY_FUNCTION__);
     }
     
+    //block list
+    if(YES == [appArgs containsObject:@"-blocklist"])
+    {
+        //load
+        [self loadBlockList];
+    }
+    
+    //setup signal handler
+    signal(SIGUSR1, dumpDNSCache);
+    
     //call completion handler
     completionHandler(nil);
     
     return;
     
+}
+
+//load block list
+-(void)loadBlockList
+{
+    //index
+    NSUInteger index = NSNotFound;
+    
+    //file path
+    NSString* path = nil;
+    
+    //data
+    NSData* data = nil;
+
+    //error
+    NSError* error = nil;
+    
+    //array
+    NSArray* array = nil;
+    
+    //get index
+    index = [appArgs indexOfObject:@"-blocklist"];
+    
+    //file should be next
+    index++;
+    
+    //sanity check
+    if(index >= appArgs.count)
+    {
+        //bail
+        goto bail;
+    }
+    
+    //extract file path
+    path = [appArgs objectAtIndex:index];
+    
+    //dbg msg
+    if(YES != [appArgs containsObject:@"-json"])
+    {
+        os_log(logHandle, "using block list: %{public}@", path);
+    }
+    
+    //sanity check
+    if(YES != [NSFileManager.defaultManager fileExistsAtPath:path])
+    {
+        //err msg
+        if(YES != [appArgs containsObject:@"-json"])
+        {
+            os_log_error(logHandle, "ERROR: failed to load block list: %{public}@", path);
+        }
+        
+        //bail
+        goto bail;
+    }
+    
+    //try load data
+    data = [NSData dataWithContentsOfFile:path];
+    if(nil == data)
+    {
+        //err msg
+        if(YES != [appArgs containsObject:@"-json"])
+        {
+            os_log_error(logHandle, "ERROR: failed to load block list: %{public}@", path);
+        }
+        
+        //bail
+        goto bail;
+    }
+   
+    //convert (JSON) data to array
+    array = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:&error];
+    if( (nil == array) ||
+        (nil != error) )
+    {
+        //err msg
+        if(YES != [appArgs containsObject:@"-json"])
+        {
+            os_log_error(logHandle, "ERROR: failed to unserialized block list: %{public}@", path);
+        }
+        
+        //bail
+        goto bail;
+    }
+    
+    //cover to set
+    self.blockList = [NSSet setWithArray:array];
+    
+bail:
+    
+    return;
 }
 
 //stop proxy
@@ -167,7 +281,7 @@ extern NSMutableArray* appArgs;
                     nw_endpoint_t localEndpoint = nil;
                     
                     //local host endpoint
-                    NWHostEndpoint *localHostEndpoint = nil;
+                    NWHostEndpoint* localHostEndpoint = nil;
                     
                     //grab local endpoint
                     localEndpoint = nw_path_copy_effective_local_endpoint(nw_connection_copy_current_path(remoteConnection));
@@ -175,7 +289,6 @@ extern NSMutableArray* appArgs;
                     //extract local host/port
                     localHost = [NSString stringWithUTF8String:nw_endpoint_get_hostname(localEndpoint)];
                     localPort = [NSString stringWithFormat:@"%d", nw_endpoint_get_port(localEndpoint)];
-                    
                     
                     //create local host endpoint
                     localHostEndpoint = [NWHostEndpoint endpointWithHostname:localHost port:localPort];
@@ -200,7 +313,6 @@ extern NSMutableArray* appArgs;
                         [self flowOutTCP:(NEAppProxyTCPFlow*)flow connection:remoteConnection];
                         [self flowInTCP:(NEAppProxyTCPFlow*)flow connection:remoteConnection];
                         
-                    
                     }];
                     
                     break;
@@ -215,7 +327,7 @@ extern NSMutableArray* appArgs;
                     nw_connection_cancel(remoteConnection);
                     break;
                     
-                    //failed
+                //failed
                 case nw_connection_state_failed:
                     nw_connection_cancel(remoteConnection);
                     break;
@@ -269,6 +381,9 @@ extern NSMutableArray* appArgs;
                 //parsed packet
                 dns_reply_t* parsedPacket = NULL;
         
+                //flag
+                BOOL block = NO;
+        
                 //error?
                 if(nil != receive_error)
                 {
@@ -291,8 +406,29 @@ extern NSMutableArray* appArgs;
                     //print
                     [self printPacket:parsedPacket flow:flow];
                     
+                    //block list specified?
+                    if(nil != self.blockList)
+                    {
+                        //should block?
+                        block = [self shouldBlock:parsedPacket];
+                    }
+                    
                     //free
                     dns_free_reply(parsedPacket);
+                }
+        
+                //block?
+                if(YES == block)
+                {
+                    //dbg msg
+                    if(YES != [appArgs containsObject:@"-json"])
+                    {
+                        os_log(logHandle, "blocking request (not writing to local flow)");
+                    }
+                    
+                    //close
+                    [flow closeWriteWithError:nil];
+                    return;
                 }
         
                 //write to flow
@@ -334,6 +470,9 @@ extern NSMutableArray* appArgs;
 
     //read from flow
     [flow readDatagramsWithCompletionHandler:^(NSArray* datagrams, NSArray* endpoints, NSError *error){
+        
+        //flag
+        BOOL block = NO;
         
         //error?
         if(nil != error)
@@ -383,8 +522,29 @@ extern NSMutableArray* appArgs;
                 //print
                 [self printPacket:parsedPacket flow:flow];
                 
+                //block list specified?
+                if(nil != self.blockList)
+                {
+                    //should block?
+                    block = [self shouldBlock:parsedPacket];
+                }
+                
                 //free
                 dns_free_reply(parsedPacket);
+            }
+            
+            //block?
+            if(YES == block)
+            {
+                //dbg msg
+                if(YES != [appArgs containsObject:@"-json"])
+                {
+                    os_log(logHandle, "blocking request (not sending to remote endpoint)");
+                }
+                
+                //close
+                [flow closeWriteWithError:nil];
+                return;
             }
             
             //create an (nw_)endpoint
@@ -408,6 +568,9 @@ extern NSMutableArray* appArgs;
                     {
                         os_log_error(logHandle, "ERROR: 'nw_connection_set_state_changed_handler' failed with %d", nw_error_get_error_code(error));
                     }
+                    
+                    //close
+                    [flow closeWriteWithError:nil];
                     
                     return;
                 }
@@ -437,6 +600,9 @@ extern NSMutableArray* appArgs;
                                 {
                                     os_log_error(logHandle, "ERROR: 'nw_connection_send' failed with %d", nw_error_get_error_code(error));
                                 }
+                                
+                                //close
+                                [flow closeWriteWithError:nil];
                                 
                                 return;
                             }
@@ -494,6 +660,9 @@ extern NSMutableArray* appArgs;
             //parsed packet
             dns_reply_t* parsedPacket = NULL;
         
+            //flag
+            BOOL block = NO;
+        
             //error?
             if(nil != receive_error)
             {
@@ -543,8 +712,34 @@ extern NSMutableArray* appArgs;
                 //print
                 [self printPacket:parsedPacket flow:flow];
                 
+                //block list specified?
+                if(nil != self.blockList)
+                {
+                    //should block?
+                    block = [self shouldBlock:parsedPacket];
+                }
+                
                 //free
                 dns_free_reply(parsedPacket);
+            }
+        
+            //block?
+            if(YES == block)
+            {
+                //dbg msg
+                if(YES != [appArgs containsObject:@"-json"])
+                {
+                    os_log(logHandle, "blocking request (not writing to local flow)");
+                }
+                
+                //close
+                [flow closeWriteWithError:nil];
+                
+                //close
+                nw_connection_set_state_changed_handler(connection, NULL);
+                nw_connection_cancel(connection);
+                
+                return;
             }
         
             //got data to write?
@@ -571,6 +766,7 @@ extern NSMutableArray* appArgs;
                     //no error
                     // setup another read
                     [self flowInTCP:flow connection:connection];
+                    
                 }];
             }
     
@@ -604,6 +800,9 @@ extern NSMutableArray* appArgs;
         
         //parsed packet
         dns_reply_t* parsedPacket = NULL;
+        
+        //flag
+        BOOL block = NO;
         
         //error?
         if(nil != error)
@@ -665,8 +864,34 @@ extern NSMutableArray* appArgs;
             //print
             [self printPacket:parsedPacket flow:flow];
             
+            //block list specified?
+            if(nil != self.blockList)
+            {
+                //should block?
+                block = [self shouldBlock:parsedPacket];
+            }
+            
             //free
             dns_free_reply(parsedPacket);
+        }
+        
+        //block?
+        if(YES == block)
+        {
+            //dbg msg
+            if(YES != [appArgs containsObject:@"-json"])
+            {
+                os_log(logHandle, "blocking request (not sending to remote endpoint)");
+            }
+            
+            //close
+            [flow closeWriteWithError:nil];
+            
+            //close
+            nw_connection_set_state_changed_handler(remoteConnection, NULL);
+            nw_connection_cancel(remoteConnection);
+            
+            return;
         }
         
         //data
@@ -687,6 +912,13 @@ extern NSMutableArray* appArgs;
                     os_log_error(logHandle, "ERROR: 'nw_connection_send' failed with %d", nw_error_get_error_code(error));
                 }
                 
+                //close
+                [flow closeWriteWithError:nil];
+                
+                //close
+                nw_connection_set_state_changed_handler(remoteConnection, NULL);
+                nw_connection_cancel(remoteConnection);
+                
                 return;
             }
             
@@ -701,21 +933,152 @@ extern NSMutableArray* appArgs;
     return;
 }
 
+//check if a request/response should be blocked
+-(BOOL)shouldBlock:(dns_reply_t*)packet
+{
+    //flag
+    BOOL block = NO;
+    
+    //header
+    dns_header_t* header = nil;
+    
+    //init header
+    header = packet->header;
+    
+    //QR
+    // query
+    if(DNS_FLAGS_QR_QUERY == (header->flags & DNS_FLAGS_QR_MASK))
+    {
+        //check each question
+        for(uint16_t i = 0; i < header->qdcount; i++)
+        {
+            //question
+            NSString* question = nil;
+            
+            //check question
+            if(NULL != packet->question[i]->name)
+            {
+                //init question
+                question = [NSString stringWithUTF8String:packet->question[i]->name];
+                if( (0 != question.length) &&
+                   (YES == [self.blockList containsObject:question]) )
+                {
+                    //set flag
+                    block = YES;
+                    
+                    //dbg msg
+                    if(YES != [appArgs containsObject:@"-json"])
+                    {
+                        os_log(logHandle, "will blocking request, question: %{public}@", question);
+                    }
+                    
+                    //done
+                    goto bail;
+                }
+            }
+        }
+        
+    } //query
+    
+    //QR
+    // reply
+    else
+    {
+        //check each answer
+        for(uint16_t i = 0; i < header->ancount; i++)
+        {
+            //value
+            NSString* answer = nil;
+            
+            //ipv6
+            struct sockaddr_in6 s6 = {0};
+            
+            //buffer
+            char hostBuffer[INET6_ADDRSTRLEN+1] = {0};
+            
+            //handle specific types
+            switch(packet->answer[i]->dnstype)
+            {
+                //host (IPv4)
+                case ns_t_a:
+                    
+                    //check / add
+                    if(nil != (answer = [NSString stringWithUTF8String:inet_ntoa(packet->answer[i]->data.A->addr)]))
+                    {
+                        if( (0 != answer.length) &&
+                            (YES == [self.blockList containsObject:answer]) )
+                        {
+                            //set flag
+                            block = YES;
+                            
+                            //dbg msg
+                            if(YES != [appArgs containsObject:@"-json"])
+                            {
+                                os_log(logHandle, "will blocking reply, answer: %{public}@", answer);
+                            }
+                            
+                            //done
+                            goto bail;
+                        }
+                    }
+                    
+                    break;
+                    
+                //host (IPv6)
+                case ns_t_aaaa:
+                    
+                    //clear
+                    memset(&s6, 0, sizeof(struct sockaddr_in6));
+                    
+                    //init
+                    s6.sin6_len = sizeof(struct sockaddr_in6);
+                    s6.sin6_family = AF_INET6;
+                    s6.sin6_addr = packet->answer[i]->data.AAAA->addr;
+                    
+                    //host
+                    if(nil != (answer = [NSString stringWithUTF8String:inet_ntop(AF_INET6, (char *)(&s6) + INET_NTOP_AF_INET6_OFFSET, hostBuffer, INET6_ADDRSTRLEN)]))
+                    {
+                        if( (0 != answer.length) &&
+                            (YES == [self.blockList containsObject:answer]) )
+                        {
+                            //set flag
+                            block = YES;
+                            
+                            //done
+                            goto bail;
+                        }
+                    }
+            }
+        }
+        
+    } //reply
+    
+bail:
+    
+    return block;
+}
+
 //get process info
 // inspired by https://wordpress.lapw.org/it/framework/network-extension/
 -(NSMutableDictionary*)getProcessInfo:(NEAppProxyFlow*)flow
 {
+    //status
+    OSStatus status = !errSecSuccess;
+    
+    //code ref
+    SecCodeRef code = NULL;
+    
+    //path
+    CFURLRef path = nil;
+    
     //process info
     NSMutableDictionary* processInfo = nil;
 
     //audit token
-    audit_token_t auditToken = {0,};
+    audit_token_t* auditToken = NULL;
     
     //pid
     pid_t pid = 0;
-    
-    //path
-    char path[PROC_PIDPATHINFO_MAXSIZE] = {0,};
     
     //init
     processInfo = [NSMutableDictionary dictionary];
@@ -726,29 +1089,68 @@ extern NSMutableArray* appArgs;
         //save
         processInfo[PROCESS_SIGNING_ID] = flow.metaData.sourceAppSigningIdentifier;
     }
-        
+    
     //extract audit token
-    for(int i=0; i< (flow.metaData.sourceAppAuditToken.length / sizeof(int)); i++)
-    {
-        //extract
-        auditToken.val[i] = ((unsigned int*)flow.metaData.sourceAppAuditToken.bytes)[i];
-    }
-
+    auditToken = (audit_token_t *)flow.metaData.sourceAppAuditToken.bytes;
+    
     //get pid
-    pid = audit_token_to_pid(auditToken);
+    pid = audit_token_to_pid(*auditToken);
     
     //save pid
     processInfo[PROCESS_ID] = [NSNumber numberWithUnsignedInt:pid];
-
-    //get path
-    if(proc_pidpath(pid, path, PROC_PIDPATHINFO_MAXSIZE) > 0)
+    
+    //obtain code ref from audit token
+    status = SecCodeCopyGuestWithAttributes(NULL, (__bridge CFDictionaryRef _Nullable)(@{(__bridge NSString *)kSecGuestAttributeAudit:[NSData dataWithBytes:auditToken length:sizeof(audit_token_t)]}), kSecCSDefaultFlags, &code);
+    if(errSecSuccess != status)
     {
-        //save path
-        processInfo[PROCESS_PATH] = [NSString stringWithUTF8String:path];
+        //err msg
+        if(YES != [appArgs containsObject:@"-json"])
+        {
+            os_log_error(logHandle, "ERROR: 'SecCodeCopyGuestWithAttributes' failed with %#x", status);
+        }
+        
+        //bail
+        goto bail;
+    }
+
+    //copy path
+    status = SecCodeCopyPath(code, kSecCSDefaultFlags, &path);
+    if(errSecSuccess != status)
+    {
+        //err msg
+        if(YES != [appArgs containsObject:@"-json"])
+        {
+            os_log_error(logHandle, "ERROR: 'SecCodeCopyPath' failed with %#x", status);
+        }
+                
+        //bail
+        goto bail;
+    }
+    
+    //save path
+    processInfo[PROCESS_PATH] = [((__bridge NSURL*)path).path copy];
+    
+bail:
+    
+    //free path
+    if(NULL != path)
+    {
+        //free
+        CFRelease(path);
+        path = NULL;
+    }
+    
+    //free code ref
+    if(NULL != code)
+    {
+        //free
+        CFRelease(code);
+        code = NULL;
     }
     
     return processInfo;
 }
+
 
 //print a packet
 // app's args control verbosity/format
@@ -1221,7 +1623,7 @@ bail:
     struct sockaddr_in6 s6 = {0};
     
     //buffer
-    char hostBuffer[0x100] = {0};
+    char hostBuffer[INET6_ADDRSTRLEN+1] = {0};
 
     //init
     formattedRecord = [NSMutableDictionary dictionary];
@@ -1274,7 +1676,7 @@ bail:
             s6.sin6_addr = record->data.AAAA->addr;
             
             //host
-            if(nil != (value = [NSString stringWithUTF8String:inet_ntop(AF_INET6, (char *)(&s6) + INET_NTOP_AF_INET6_OFFSET, hostBuffer, 64)]))
+            if(nil != (value = [NSString stringWithUTF8String:inet_ntop(AF_INET6, (char *)(&s6) + INET_NTOP_AF_INET6_OFFSET, hostBuffer, INET6_ADDRSTRLEN)]))
             {
                 //add
                 formattedRecord[@"Host Address"] = value;

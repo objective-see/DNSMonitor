@@ -14,9 +14,8 @@
 
 @interface DNSProxyProvider : NEDNSProxyProvider
 
-//DNS cache
-// mappings of IP:URL
-@property(nonatomic, retain)NSCache* dnsCache;
+//block list
+@property(nonatomic, retain)NSSet* blockList;
 
 @end
 
