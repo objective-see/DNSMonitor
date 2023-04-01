@@ -6,14 +6,14 @@
 //  Copyright © 2022 Objective-See. All rights reserved.
 //
 
-//https://developer.apple.com/forums/thread/75893
-
 #import <nameser.h>
 #import <libproc.h>
 #import <dns_util.h>
 #import <bsm/libbsm.h>
 
+#import "Process.h"
 #import "DNSProxyProvider.h"
+
 
 #define DNS_FLAGS_QR_MASK  0x8000
 #define DNS_FLAGS_QR_QUERY 0x0000
@@ -83,6 +83,7 @@ void dumpDNSCache(int signal) {
     }
     
     //setup signal handler
+    // on signal will dump dns cache
     signal(SIGUSR1, dumpDNSCache);
     
     //call completion handler
@@ -1059,7 +1060,6 @@ bail:
 }
 
 //get process info
-// inspired by https://wordpress.lapw.org/it/framework/network-extension/
 -(NSMutableDictionary*)getProcessInfo:(NEAppProxyFlow*)flow
 {
     //status
@@ -1069,7 +1069,10 @@ bail:
     SecCodeRef code = NULL;
     
     //path
-    CFURLRef path = nil;
+    NSString* path = nil;
+    
+    //path
+    CFURLRef pathURL = nil;
     
     //process info
     NSMutableDictionary* processInfo = nil;
@@ -1100,44 +1103,56 @@ bail:
     processInfo[PROCESS_ID] = [NSNumber numberWithUnsignedInt:pid];
     
     //obtain code ref from audit token
-    status = SecCodeCopyGuestWithAttributes(NULL, (__bridge CFDictionaryRef _Nullable)(@{(__bridge NSString *)kSecGuestAttributeAudit:[NSData dataWithBytes:auditToken length:sizeof(audit_token_t)]}), kSecCSDefaultFlags, &code);
-    if(errSecSuccess != status)
+    status = SecCodeCopyGuestWithAttributes(NULL, (__bridge CFDictionaryRef _Nullable)(@{(__bridge NSString *)kSecGuestAttributeAudit:flow.metaData.sourceAppAuditToken}), kSecCSDefaultFlags, &code);
+    if(errSecSuccess == status)
+    {
+        //copy path
+        status = SecCodeCopyPath(code, kSecCSDefaultFlags, &pathURL);
+        if(errSecSuccess != status)
+        {
+            //err msg
+            if(YES != [appArgs containsObject:@"-json"])
+            {
+                os_log_error(logHandle, "ERROR: 'SecCodeCopyPath' failed with %#x", status);
+            }
+                    
+            //bail
+            goto bail;
+        }
+        
+        //save path
+        processInfo[PROCESS_PATH] = [((__bridge NSURL*)pathURL).path copy];
+    }
+    //no such file?
+    // try other method(s)
+    else if(kPOSIXErrorENOENT == status)
+    {
+        //get path
+        path = getProcessPath(pid);
+        if(nil != path)
+        {
+            //save path
+            processInfo[PROCESS_PATH] = path;
+        }
+    }
+    //other error
+    else
     {
         //err msg
         if(YES != [appArgs containsObject:@"-json"])
         {
             os_log_error(logHandle, "ERROR: 'SecCodeCopyGuestWithAttributes' failed with %#x", status);
         }
-        
-        //bail
-        goto bail;
     }
-
-    //copy path
-    status = SecCodeCopyPath(code, kSecCSDefaultFlags, &path);
-    if(errSecSuccess != status)
-    {
-        //err msg
-        if(YES != [appArgs containsObject:@"-json"])
-        {
-            os_log_error(logHandle, "ERROR: 'SecCodeCopyPath' failed with %#x", status);
-        }
-                
-        //bail
-        goto bail;
-    }
-    
-    //save path
-    processInfo[PROCESS_PATH] = [((__bridge NSURL*)path).path copy];
-    
+   
 bail:
     
-    //free path
-    if(NULL != path)
+    //free path url
+    if(NULL != pathURL)
     {
         //free
-        CFRelease(path);
-        path = NULL;
+        CFRelease(pathURL);
+        pathURL = NULL;
     }
     
     //free code ref
@@ -1150,7 +1165,6 @@ bail:
     
     return processInfo;
 }
-
 
 //print a packet
 // app's args control verbosity/format
@@ -1736,4 +1750,9 @@ bail:
     return formattedRecord;
 }
 
+
 @end
+
+
+
+

@@ -16,6 +16,9 @@
 //get process's path
 NSString* getProcessPath(pid_t pid);
 
+//get current working dir
+NSString* getProcessCWD(pid_t pid);
+
 //find a process by name
 pid_t findProcess(NSString* processName);
 

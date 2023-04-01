@@ -14,6 +14,9 @@ NSString* getProcessPath(pid_t pid)
     //task path
     NSString* processPath = nil;
     
+    //cwd
+    NSString* cwd = nil;
+    
     //buffer for process path
     char pathBuffer[PROC_PIDPATHINFO_MAXSIZE] = {0};
     
@@ -102,6 +105,20 @@ NSString* getProcessPath(pid_t pid)
         //extract task's name
         // follows # of args (int) and is NULL-terminated
         processPath = [NSString stringWithUTF8String:taskArgs + sizeof(int)];
+        
+        //short path?
+        // get cwd + to append
+        if(YES == [processPath hasPrefix:@"./"])
+        {
+            //chop ./
+            processPath = [processPath substringWithRange:NSMakeRange(2, [processPath length]-2)];
+            cwd = getProcessCWD(pid);
+            if(nil != cwd)
+            {
+                //append
+                processPath = [cwd stringByAppendingPathComponent:processPath];
+            }
+        }
     }
     
 bail:
@@ -115,6 +132,32 @@ bail:
     }
     
     return processPath;
+}
+
+//get current working dir
+NSString* getProcessCWD(pid_t pid)
+{
+    //cwd
+    NSString* directory = nil;
+    
+    //status
+    int status = -1;
+    
+    //path info
+    struct proc_vnodepathinfo vpi = {0,};
+    
+    //init
+    memset(&vpi, 0x0, sizeof(vpi));
+    
+    //get proc's cwd, via PROC_PIDVNODEPATHINFO
+    status = proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &vpi, sizeof(vpi));
+    if(status > 0)
+    {
+        //convert to string
+        directory = [NSString stringWithUTF8String:vpi.pvi_cdir.vip_path];
+    }
+    
+    return directory;
 }
 
 //find a process by name

@@ -229,7 +229,6 @@ bail:
     return;
 }
 
-
 //user approval delegate
 // if this isn't the first time launch, will alert user to approve
 -(void)requestNeedsUserApproval:(nonnull OSSystemExtensionRequest *)request {
