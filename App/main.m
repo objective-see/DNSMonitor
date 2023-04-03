@@ -68,7 +68,6 @@ int main(int argc, const char * argv[]) {
             //main app
             return NSApplicationMain(argc, argv);
         }
-        
         //CHECK 0x2:
         // must be run from /Applications as we're using a System Extension
         if(YES != [NSBundle.mainBundle.bundlePath isEqualToString:[@"/Applications" stringByAppendingPathComponent:APP_NAME]])
@@ -201,7 +200,7 @@ bail:
 }
 
 //print usage
-void usage()
+void usage(void)
 {
     //name
     NSString* name = nil;

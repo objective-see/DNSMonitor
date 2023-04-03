@@ -134,6 +134,42 @@ bail:
     return processPath;
 }
 
+//get process's name
+NSString* getProcessName(pid_t pid, NSString* path)
+{
+    //status
+    int status = 0;
+    
+    //process name
+    NSString* processName = nil;
+    
+    //buffer for process path
+    char nameBuffer[PROC_PIDPATHINFO_MAXSIZE] = {0};
+    
+    //clear
+    memset(nameBuffer, 0x0, sizeof(nameBuffer));
+    
+    //get name
+    status = proc_name(pid, &nameBuffer, sizeof(nameBuffer));
+    if(status >= 0)
+    {
+        //init task's name
+        processName = [NSString stringWithUTF8String:nameBuffer];
+    }
+    
+    //still nil?
+    // just grab from path
+    if(nil == processName)
+    {
+        //from path
+        processName = [path lastPathComponent];
+    }
+    
+bail:
+    
+    return processName;
+}
+
 //get current working dir
 NSString* getProcessCWD(pid_t pid)
 {
