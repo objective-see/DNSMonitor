@@ -175,7 +175,7 @@ void dumpDNSCache(int signal) {
         goto bail;
     }
     
-    //cover to set
+    //covert to set
     self.blockList = [NSSet setWithArray:array];
     
 bail:
@@ -962,7 +962,7 @@ bail:
                 //init question
                 question = [NSString stringWithUTF8String:packet->question[i]->name];
                 if( (0 != question.length) &&
-                   (YES == [self.blockList containsObject:question]) )
+                    (YES == [self.blockList containsObject:question]) )
                 {
                     //set flag
                     block = YES;
