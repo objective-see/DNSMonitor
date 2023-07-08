@@ -30,6 +30,7 @@
 #define INET_NTOP_AF_INET6_OFFSET 8
 
 #define PROCESS_ID @"pid"
+#define PROCESS_NAME @"name"
 #define PROCESS_PATH @"path"
 #define PROCESS_SIGNING_ID @"signing ID"
 
@@ -1071,6 +1072,9 @@ bail:
     //path
     NSString* path = nil;
     
+    //name
+    NSString* name = nil;
+    
     //path
     CFURLRef pathURL = nil;
     
@@ -1144,7 +1148,15 @@ bail:
             os_log_error(logHandle, "ERROR: 'SecCodeCopyGuestWithAttributes' failed with %#x", status);
         }
     }
-   
+    
+    //get name
+    name = getProcessName(pid, path);
+    if(0 != name.length)
+    {
+        //save
+        processInfo[PROCESS_NAME] = name;
+    }
+    
 bail:
     
     //free path url

@@ -16,6 +16,9 @@
 //get process's path
 NSString* getProcessPath(pid_t pid);
 
+//get process's name
+NSString* getProcessName(pid_t pid, NSString* path);
+
 //get current working dir
 NSString* getProcessCWD(pid_t pid);
 
@@ -24,5 +27,7 @@ pid_t findProcess(NSString* processName);
 
 //extract process' commandline args
 NSMutableArray* getArgs(pid_t pid);
+
+NSDictionary* getProcessInfo(pid_t pid);
 
 #endif /* Process_h */
