@@ -14,7 +14,6 @@
 #import "Process.h"
 #import "DNSProxyProvider.h"
 
-
 #define DNS_FLAGS_QR_MASK  0x8000
 #define DNS_FLAGS_QR_QUERY 0x0000
 
@@ -34,6 +33,8 @@
 #define PROCESS_PATH @"path"
 #define PROCESS_SIGNING_ID @"signing ID"
 
+#define MAX_ENTRIES 1024
+
 /* GLOBALS */
 
 //log handle
@@ -43,18 +44,185 @@ extern os_log_t logHandle;
 extern NSMutableArray* appArgs;
 
 //DNS cache
-NSCache* dnsCache;
+NSMutableArray* dnsCache;
 
 //invoked via SIGUSR1
 // dump the DNS cache to the system log
 void dumpDNSCache(int signal) {
     
-    //dump cache
-    //TODO: dump it better
-    os_log(logHandle, "DNS Cache: %{public}@", dnsCache);
+    //question
+    NSString* question = nil;
+    
+    //for json
+    NSData* json = nil;
+    
+    //json output?
+    if(YES == [appArgs containsObject:@"-json"])
+    {
+        //serialize to JSON
+        // wrap since we are serializing JSON
+        @try
+        {
+            //serialize
+            json = [NSJSONSerialization dataWithJSONObject:dnsCache options:0 error:nil];
+        }
+        //ignore exceptions
+        @catch(NSException *exception)
+        {
+            //bail
+            goto bail;
+        }
+        
+        //print (json)
+        os_log(logHandle, "%{public}@", [[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]);
+        
+    }
+    //just print as is
+    else
+    {
+        //dbg msg
+        os_log(logHandle, "Dumping DNS Cache:");
+        
+        //print all
+        for(NSDictionary* entry in dnsCache)
+        {
+            //get question
+            // always first/only key
+            question = entry.allKeys.firstObject;
+            
+            //print
+            os_log(logHandle, "%{public}@:%{public}@", question, entry[question]);
+        }
+    }
+    
+bail:
     
     return;
 }
+
+@interface NSMutableArray (DNSCache)
+
+-(void)cache:(dns_reply_t*)packet;
+
+@end
+
+@implementation NSMutableArray (DNSCache)
+
+//save to cache
+// note: dump via # kill -SIGUSR1 <pid of com.objective-see.dnsmonitor.extension>
+-(void)cache:(dns_reply_t*)packet
+{
+    //header
+    dns_header_t* header = nil;
+    
+    //init header
+    header = packet->header;
+    
+    //questions
+    NSMutableArray* questions = nil;
+    
+    //answers
+    NSMutableArray* answers = nil;
+
+    //init
+    questions = [NSMutableArray array];
+    
+    //init
+    answers = [NSMutableArray array];
+
+    //add each question
+    for(uint16_t i = 0; i < header->qdcount; i++)
+    {
+        //question
+        NSString* question = nil;
+        
+        //check question
+        if(NULL != packet->question[i]->name)
+        {
+            //init question
+            if(nil != (question = [NSString stringWithUTF8String:packet->question[i]->name]))
+            {
+                //add
+                [questions addObject:question];
+            }
+        }
+    }
+    
+    //add each answer
+    for(uint16_t i = 0; i < header->ancount; i++)
+    {
+        //value
+        NSString* answer = nil;
+        
+        //ipv6
+        struct sockaddr_in6 s6 = {0};
+        
+        //buffer
+        char hostBuffer[INET6_ADDRSTRLEN+1] = {0};
+        
+        //handle specific types
+        switch(packet->answer[i]->dnstype)
+        {
+            //host (IPv4)
+            case ns_t_a:
+                
+                //check / add
+                if(nil != (answer = [NSString stringWithUTF8String:inet_ntoa(packet->answer[i]->data.A->addr)]))
+                {
+                   //add
+                   [answers addObject:answer];
+                }
+                
+                break;
+                
+            //host (IPv6)
+            case ns_t_aaaa:
+                
+                //clear
+                memset(&s6, 0, sizeof(struct sockaddr_in6));
+                
+                //init
+                s6.sin6_len = sizeof(struct sockaddr_in6);
+                s6.sin6_family = AF_INET6;
+                s6.sin6_addr = packet->answer[i]->data.AAAA->addr;
+                
+                //host
+                if(nil != (answer = [NSString stringWithUTF8String:inet_ntop(AF_INET6, (char *)(&s6) + INET_NTOP_AF_INET6_OFFSET, hostBuffer, INET6_ADDRSTRLEN)]))
+                {
+                   //add
+                   [answers addObject:answer];
+                }
+        }
+    }
+
+    //sync
+    @synchronized (dnsCache)
+    {
+        //need to prune?
+        if(dnsCache.count >= MAX_ENTRIES)
+        {
+            //prune
+            [dnsCache removeObjectsInRange:NSMakeRange(0, MAX_ENTRIES/2)];
+        }
+        
+        //add to cache
+        // if there was answer
+        for(NSString* question in questions)
+        {
+            //add
+            if(0 != answers.count)
+            {
+                //add
+                [dnsCache addObject:@{question:answers}];
+            }
+        }
+        
+    } //sync
+        
+    return;
+}
+
+@end
 
 @implementation DNSProxyProvider
 
@@ -63,13 +231,8 @@ void dumpDNSCache(int signal) {
             completionHandler:(void (^)(NSError *error))completionHandler
 {
     //init DNS 'cache'
-    dnsCache = [[NSCache alloc] init];
+    dnsCache = [NSMutableArray array];
             
-    //set cache limit
-    dnsCache.countLimit = 1024;
-    
-    //TODO: store questions/answers in cache!
-    
     //dbg msg
     if(YES != [appArgs containsObject:@"-json"])
     {
@@ -407,6 +570,9 @@ bail:
                 {
                     //print
                     [self printPacket:parsedPacket flow:flow];
+                    
+                    //write to cache
+                    [dnsCache cache:parsedPacket];
                     
                     //block list specified?
                     if(nil != self.blockList)
