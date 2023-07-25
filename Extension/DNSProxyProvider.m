@@ -1137,7 +1137,7 @@ bail:
                     //dbg msg
                     if(YES != [appArgs containsObject:@"-json"])
                     {
-                        os_log(logHandle, "will blocking request, question: %{public}@", question);
+                        os_log(logHandle, "will block request, question: %{public}@", question);
                     }
                     
                     //done
@@ -1182,7 +1182,7 @@ bail:
                             //dbg msg
                             if(YES != [appArgs containsObject:@"-json"])
                             {
-                                os_log(logHandle, "will blocking reply, answer: %{public}@", answer);
+                                os_log(logHandle, "will block reply, answer: %{public}@", answer);
                             }
                             
                             //done
