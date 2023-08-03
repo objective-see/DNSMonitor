@@ -65,7 +65,8 @@
     //set invalidation handler
     // note: need to have somethigng set as this get called (indirectly) when
     //       the 'invalidate' method is called ... but don't need to do anything
-    [self.liveStream setInvalidationHandler:^void (int reason, id streamPosition) {
+    [self.liveStream setInvalidationHandler:^void (int reason, id streamPosition)
+    {
         //NSLog(@"invalidation handler called with %d!", reason);
         ;
     }];

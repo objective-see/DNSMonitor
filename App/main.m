@@ -101,23 +101,11 @@ int main(int argc, const char * argv[]) {
         // ...and (forevers) print out any messages from extension
         [logMonitor start:predicate level:Log_Level_Default eventHandler:^(OSLogEventProxy* event) {
             
-            //json
+            //json (lines)
             if(YES == [arguments containsObject:@"-json"])
             {
-                //start
-                if(0 == recordCount)
-                {
-                    printf("[");
-                }
-                
-                //display record separator
-                else
-                {
-                    printf(",");
-                }
-                
                 //print / flush
-                printf("%s", event.composedMessage.UTF8String);
+                printf("%s\n", event.composedMessage.UTF8String);
                 fflush(stdout);
                 
             }
