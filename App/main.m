@@ -204,10 +204,10 @@ void usage(void)
 
     //usage
     printf("\n%s (v%s) usage:\n", name.UTF8String, version.UTF8String);
-    printf(" -h or -help           display this usage info\n");
-    printf(" -json                 output is formatted as JSON\n");
+    printf(" -h or -help           Display this usage info\n");
+    printf(" -json                 Output is formatted as JSON\n");
     printf(" -pretty               JSON output is 'pretty-printed'\n");
-    printf(" -blocklist <block list>   file of domains / ip addresses to block'\n");
+    printf(" -block <block list>   File of domains / ip addresses to block'\n");
     
     return;
 }

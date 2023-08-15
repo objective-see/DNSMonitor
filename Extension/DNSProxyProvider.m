@@ -303,7 +303,7 @@ bail:
         //err msg
         if(YES != [appArgs containsObject:@"-json"])
         {
-            os_log_error(logHandle, "ERROR: failed to load block list: %{public}@", path);
+            os_log_error(logHandle, "ERROR: failed to find specified block list: %{public}@", path);
         }
         
         //bail
@@ -373,7 +373,8 @@ bail:
     if(YES == [flow isKindOfClass:[NEAppProxyUDPFlow class]])
     {
         //open flow
-        [(NEAppProxyUDPFlow*)flow openWithLocalEndpoint:(NWHostEndpoint*)((NEAppProxyUDPFlow*)flow).localEndpoint completionHandler:^(NSError *error) {
+        [(NEAppProxyUDPFlow*)flow openWithLocalEndpoint:(NWHostEndpoint*)((NEAppProxyUDPFlow*)flow).localEndpoint completionHandler:^(NSError *error)
+        {
                 
             if(error == nil)
             {
@@ -405,17 +406,51 @@ bail:
         
         //create an (nw_)endpoint
         remoteEndpoint = nw_endpoint_create_host(((NWHostEndpoint*)tcpFlow.remoteEndpoint).hostname.UTF8String, ((NWHostEndpoint*)tcpFlow.remoteEndpoint).port.UTF8String);
+        if(NULL == remoteEndpoint)
+        {
+            //err msg
+            if(YES != [appArgs containsObject:@"-json"])
+            {
+                os_log_error(logHandle, "ERROR: 'nw_endpoint_create_host' returned NULL");
+            }
+            
+            //close
+            [flow closeWriteWithError:nil];
+            
+            //set flag
+            handled = NO;
+            
+            //bail
+            goto bail;
+        }
         
         //create connection
         remoteConnection = nw_connection_create(remoteEndpoint, nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION));
+        if(NULL == remoteConnection)
+        {
+            //err msg
+            if(YES != [appArgs containsObject:@"-json"])
+            {
+                os_log_error(logHandle, "ERROR: 'nw_connection_create' returned NULL");
+            }
+            
+            //close
+            [flow closeWriteWithError:nil];
+            
+            //set flag
+            handled = NO;
+            
+            //bail
+            goto bail;
+        }
         
         //set queue
         nw_connection_set_queue(remoteConnection, dispatch_get_main_queue());
         
         //set handler
         // will be invoked with various states
-        nw_connection_set_state_changed_handler(remoteConnection, ^(nw_connection_state_t state, nw_error_t error) {
-            
+        nw_connection_set_state_changed_handler(remoteConnection, ^(nw_connection_state_t state, nw_error_t error)
+        {
             //error?
             if(NULL != error)
             {
@@ -424,6 +459,9 @@ bail:
                 {
                     os_log_error(logHandle, "ERROR: 'nw_connection_set_state_changed_handler' failed with %d", nw_error_get_error_code(error));
                 }
+                
+                //close
+                [flow closeWriteWithError:nil];
                 
                 return;
             }
@@ -459,16 +497,19 @@ bail:
                     localHostEndpoint = [NWHostEndpoint endpointWithHostname:localHost port:localPort];
                     
                     //open flow
-                    [flow openWithLocalEndpoint:localHostEndpoint completionHandler:^(NSError *error) {
-                            
+                    [flow openWithLocalEndpoint:localHostEndpoint completionHandler:^(NSError *error)
+                    {
                         //error?
                         if(nil != error)
                         {
                             //err msg
                             if(YES != [appArgs containsObject:@"-json"])
                             {
-                                os_log_error(logHandle, "openWithLocalEndpoint ERROR: %{public}@", error);
+                                os_log_error(logHandle, "ERROR: 'openWithLocalEndpoint' failed with %{public}@", error);
                             }
+                            
+                            //close
+                            [flow closeWriteWithError:nil];
             
                             return;
                         }
@@ -529,6 +570,8 @@ bail:
         //set flag
         handled = NO;
     }
+    
+bail:
         
     return handled;
 }
@@ -712,22 +755,49 @@ bail:
                 
                 //close
                 [flow closeWriteWithError:nil];
+                
                 return;
             }
             
             //create an (nw_)endpoint
             endpoint = nw_endpoint_create_host(((NWHostEndpoint*)endpoints[i]).hostname.UTF8String, ((NWHostEndpoint*)endpoints[i]).port.UTF8String);
+            if(NULL == endpoint)
+            {
+                //err msg
+                if(YES != [appArgs containsObject:@"-json"])
+                {
+                    os_log_error(logHandle, "ERROR: 'nw_endpoint_create_host' returned NULL");
+                }
+                
+                //close
+                [flow closeWriteWithError:nil];
+                
+                return;
+            }
             
             //create connection
             connection = nw_connection_create(endpoint, nw_parameters_create_secure_udp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION));
+            if(NULL == connection)
+            {
+                //err msg
+                if(YES != [appArgs containsObject:@"-json"])
+                {
+                    os_log_error(logHandle, "ERROR: 'nw_connection_create' returned NULL");
+                }
+                
+                //close
+                [flow closeWriteWithError:nil];
+                
+                return;
+            }
             
             //set queue
             nw_connection_set_queue(connection, dispatch_get_main_queue());
             
             //set handler
             // will be invoked with various states
-            nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t state, nw_error_t error) {
-                
+            nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t state, nw_error_t error)
+            {
                 //error?
                 if(NULL != error)
                 {
@@ -758,8 +828,8 @@ bail:
                         data = dispatch_data_create(((NSData*)datagrams[i]).bytes, ((NSData*)datagrams[i]).length, nil, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                         
                         //send datagram
-                        nw_connection_send(connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t  _Nullable error) {
-                            
+                        nw_connection_send(connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t  _Nullable error)
+                        {
                             //error
                             if(NULL != error)
                             {
@@ -817,8 +887,8 @@ bail:
 {
     //read from (remote) connection
     nw_connection_receive(connection, 1, UINT32_MAX,
-        ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t receive_error) {
-        
+        ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t receive_error)
+    {
             //length
             uint16_t length = 0;
         
@@ -914,8 +984,8 @@ bail:
             if(0 != ((NSData*)content).length)
             {
                 //write to flow
-                [flow writeData:(NSData*)content withCompletionHandler:^(NSError * _Nullable error) {
-                    
+                [flow writeData:(NSData*)content withCompletionHandler:^(NSError * _Nullable error)
+                {
                     //error?
                     if(nil != error)
                     {
@@ -958,8 +1028,8 @@ bail:
 -(void)flowOutTCP:(NEAppProxyTCPFlow*)flow connection:(nw_connection_t)remoteConnection
 {
     //read from local flow
-    [flow readDataWithCompletionHandler:^(NSData * _Nullable data, NSError * _Nullable error) {
-        
+    [flow readDataWithCompletionHandler:^(NSData * _Nullable data, NSError * _Nullable error)
+    {
         //length
         uint16_t length = 0;
         
@@ -1069,8 +1139,8 @@ bail:
         dispatchData = dispatch_data_create(data.bytes, data.length, nil, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
         
         //send to remote endpoint
-        nw_connection_send(remoteConnection, dispatchData, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t  _Nullable error) {
-            
+        nw_connection_send(remoteConnection, dispatchData, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t  _Nullable error)
+        {
             //error
             if(NULL != error)
             {
