@@ -207,7 +207,7 @@ void usage(void)
     printf(" -h or -help           Display this usage info\n");
     printf(" -json                 Output is formatted as JSON\n");
     printf(" -pretty               JSON output is 'pretty-printed'\n");
-    printf(" -block <block list>   File of domains / ip addresses to block'\n");
+    printf(" -block <block list>   File of domains / ip addresses to block\n");
     
     return;
 }
