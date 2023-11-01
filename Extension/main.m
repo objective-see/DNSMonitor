@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     [NEProvider startSystemExtensionMode];
             
     //dbg msg
-    if(YES != [appArgs containsObject:@"-json"])
+    if(YES != [appArgs containsObject:ARGS_JSON])
     {
         os_log(logHandle, "enabled extension ('startSystemExtensionMode' was called)");
     }

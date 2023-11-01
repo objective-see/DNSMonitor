@@ -31,4 +31,13 @@
 //activate
 #define ACTION_ACTIVATE 1
 
+//args
+#define ARGS_H @"-h"
+#define ARGS_HELP @"-help"
+
+#define ARGS_JSON @"-json"
+#define ARGS_PRETTY @"-pretty"
+
+#define ARGS_BLOCK @"-block"
+
 #endif /* const_h */

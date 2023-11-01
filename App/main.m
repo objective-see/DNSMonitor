@@ -38,8 +38,8 @@ int main(int argc, const char * argv[]) {
         arguments = [[NSProcessInfo processInfo] arguments];
         
         //handle '-h' or '-help'
-        if( (YES == [arguments containsObject:@"-h"]) ||
-            (YES == [arguments containsObject:@"-help"]) )
+        if( (YES == [arguments containsObject:ARGS_H]) ||
+            (YES == [arguments containsObject:ARGS_HELP]) )
         {
             //print usage
             usage();
@@ -52,7 +52,7 @@ int main(int argc, const char * argv[]) {
         parent = getParentBundleID();
         
         //dbg msg
-        if(YES != [arguments containsObject:@"-json"])
+        if(YES != [arguments containsObject:ARGS_JSON])
         {
             NSLog(@"Started %s (pid: %d, parent: %@) ", BUNDLE_ID, getpid(), parent);
         }
@@ -76,7 +76,7 @@ int main(int argc, const char * argv[]) {
             status = -1;
          
              //err msg
-             if(YES != [arguments containsObject:@"-json"])
+             if(YES != [arguments containsObject:ARGS_JSON])
              {
                  //err msg
                  NSLog(@"\n\nERROR: As %@ uses a System Extension, Apple requires it must be located in /Applications\n\n", [APP_NAME stringByDeletingPathExtension]);
@@ -102,7 +102,7 @@ int main(int argc, const char * argv[]) {
         [logMonitor start:predicate level:Log_Level_Default eventHandler:^(OSLogEventProxy* event) {
             
             //json (lines)
-            if(YES == [arguments containsObject:@"-json"])
+            if(YES == [arguments containsObject:ARGS_JSON])
             {
                 //print / flush
                 printf("%s\n", event.composedMessage.UTF8String);
@@ -134,7 +134,7 @@ int main(int argc, const char * argv[]) {
         dispatch_source_set_event_handler(source, ^{
             
             //json
-            if(YES == [arguments containsObject:@"-json"])
+            if(YES == [arguments containsObject:ARGS_JSON])
             {
                 //end/flush
                 printf("]");
@@ -159,7 +159,7 @@ int main(int argc, const char * argv[]) {
             if(YES != started)
             {
                 //err msg
-                if(YES != [arguments containsObject:@"-json"])
+                if(YES != [arguments containsObject:ARGS_JSON])
                 {
                     //dbg msg
                     NSLog(@"ERROR: failed to start System/Network Extension");
@@ -204,10 +204,10 @@ void usage(void)
 
     //usage
     printf("\n%s (v%s) usage:\n", name.UTF8String, version.UTF8String);
-    printf(" -h or -help           Display this usage info\n");
-    printf(" -json                 Output is formatted as JSON\n");
-    printf(" -pretty               JSON output is 'pretty-printed'\n");
-    printf(" -block <block list>   File of domains / ip addresses to block\n");
+    printf(" %s or %s           Display this usage info\n", ARGS_H.UTF8String, ARGS_HELP.UTF8String);
+    printf(" %s                 Output is formatted as JSON\n", ARGS_JSON.UTF8String);
+    printf(" %s               JSON output is 'pretty-printed'\n", ARGS_PRETTY.UTF8String);
+    printf(" %s <block list>   File of domains / ip addresses to block\n", ARGS_BLOCK.UTF8String);
     
     return;
 }
@@ -313,7 +313,7 @@ BOOL stopExtension(void)
         if(YES != toggled)
         {
             //err msg
-            if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+            if(YES != [NSProcessInfo.processInfo.arguments containsObject:ARGS_JSON])
             {
                 NSLog(@"ERROR: failed to deactivate System Extension");
             }
@@ -322,7 +322,7 @@ BOOL stopExtension(void)
         else
         {
             //dbg msg
-            if(YES != [NSProcessInfo.processInfo.arguments containsObject:@"-json"])
+            if(YES != [NSProcessInfo.processInfo.arguments containsObject:ARGS_JSON])
             {
                 NSLog(@"deactived System Extension");
             }
