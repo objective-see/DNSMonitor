@@ -95,7 +95,7 @@ bail:
     {
         NSLog(@"starting network extension...");
     }
-        
+    
     //load prefs
     [NEDNSProxyManager.sharedManager loadFromPreferencesWithCompletionHandler:^(NSError * _Nullable error) {
         
@@ -149,11 +149,12 @@ bail:
                 return;
             }
             
+            //happy
             reply(YES);
             
         }];
     }];
-    
+     
     return;
 }
 

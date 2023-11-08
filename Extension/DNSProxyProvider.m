@@ -246,6 +246,15 @@ bail:
         //load
         [self loadBlockList];
     }
+    //no block list
+    else
+    {
+        //dbg msg
+        if(YES != [appArgs containsObject:ARGS_JSON])
+        {
+            os_log(logHandle, "no block list specified, all traffic will be allowed");
+        }
+    }
     
     //setup signal handler
     // on signal will dump dns cache
