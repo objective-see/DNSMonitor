@@ -70,7 +70,7 @@ int main(int argc, const char * argv[]) {
         }
         //CHECK 0x2:
         // must be run from /Applications as we're using a System Extension
-        if(YES != [NSBundle.mainBundle.bundlePath isEqualToString:[@"/Applications" stringByAppendingPathComponent:APP_NAME]])
+        if(YES != [NSBundle.mainBundle.bundlePath hasPrefix:@"/Applications/"])
         {
             //set
             status = -1;
