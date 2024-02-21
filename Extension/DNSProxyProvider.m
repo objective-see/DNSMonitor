@@ -349,7 +349,7 @@ bail:
         goto bail;
     }
     
-    //covert to set
+    //convert to set
     self.blockList = [NSSet setWithArray:array];
     
 bail:
