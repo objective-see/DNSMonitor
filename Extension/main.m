@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     //dbg msg
     if(YES != [appArgs containsObject:ARGS_JSON])
     {
-        os_log(logHandle, "successfull enabled extension ('startSystemExtensionMode' was called)");
+        os_log(logHandle, "successfully enabled extension ('startSystemExtensionMode' was called)");
     }
     
     }//pool
