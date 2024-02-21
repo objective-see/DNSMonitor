@@ -924,13 +924,13 @@ bail:
             }
         
             //no length?
-            // just ingore...
+            // just ignore...
             if(((NSData*)content).length < 2)
             {
                 return;
             }
         
-            //extact bytes
+            //extract bytes
             memcpy(&length, ((NSData*)content).bytes, sizeof(uint16_t));
         
             //convert
@@ -1077,13 +1077,13 @@ bail:
         }
         
         //no length?
-        // just ingore...
+        // just ignore...
         if(data.length < 2)
         {
             return;
         }
         
-        //extact bytes
+        //extract bytes
         memcpy(&length, data.bytes, sizeof(uint16_t));
         
         //convert
