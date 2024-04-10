@@ -326,7 +326,7 @@ BOOL stopExtension(void)
             //dbg msg
             if(YES != [NSProcessInfo.processInfo.arguments containsObject:ARGS_JSON])
             {
-                NSLog(@"deactived System Extension");
+                NSLog(@"deactivated System Extension");
             }
             
             //happy
