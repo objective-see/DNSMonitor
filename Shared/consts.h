@@ -36,8 +36,9 @@
 #define ARGS_HELP @"-help"
 
 #define ARGS_JSON @"-json"
-#define ARGS_PRETTY @"-pretty"
-
 #define ARGS_BLOCK @"-block"
+#define ARGS_PRETTY @"-pretty"
+#define ARGS_BLOCK_VIA_NX @"-nx"
+
 
 #endif /* const_h */

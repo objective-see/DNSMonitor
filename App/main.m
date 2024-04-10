@@ -68,6 +68,7 @@ int main(int argc, const char * argv[]) {
             //main app
             return NSApplicationMain(argc, argv);
         }
+        
         //CHECK 0x2:
         // must be run from /Applications as we're using a System Extension
         if(YES != [NSBundle.mainBundle.bundlePath hasPrefix:@"/Applications/"])
@@ -90,7 +91,7 @@ int main(int argc, const char * argv[]) {
             
              goto bail;
         }
-        
+    
         //init predicate to capture log message from extension
         predicate = [NSPredicate predicateWithFormat:@"subsystem='com.objective-see.dnsmonitor'"];
         
@@ -207,6 +208,7 @@ void usage(void)
     printf(" %s or %s           Display this usage info\n", ARGS_H.UTF8String, ARGS_HELP.UTF8String);
     printf(" %s                 Output is formatted as JSON\n", ARGS_JSON.UTF8String);
     printf(" %s               JSON output is 'pretty-printed'\n", ARGS_PRETTY.UTF8String);
+    printf(" %s                   Block via 'NX' packet\n", ARGS_BLOCK_VIA_NX.UTF8String);
     printf(" %s <block list>   File of domains / ip addresses to block\n", ARGS_BLOCK.UTF8String);
     
     return;
