@@ -1391,8 +1391,9 @@ bail:
     
     //update header
     header = (dns_header_t *)[response bytes];
-    header->flags &= htons(0xF80F); // Mask to clear RCODE bits
-    header->flags |= htons(0x0300); // Set RCODE to NXDOMAIN (3)
+    header->flags |= htons(0x8000);
+    header->flags &= ~htons(0xF);
+    header->flags |= htons(0x3);
     
 bail:
     
