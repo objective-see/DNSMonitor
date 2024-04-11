@@ -1552,6 +1552,12 @@ bail:
         
         //open fp stream
         fp = open_memstream((char **)&bytes, &length);
+        if(NULL == fp)
+        {
+            //err msg
+            os_log_error(logHandle, "ERROR: 'open_memstream' failed with %d", errno);
+            goto bail;
+        }
         
         //print to stream
         dns_print_reply(packet, fp, 0xFFFF);
@@ -1568,6 +1574,8 @@ bail:
         //free
         free(bytes);
     }
+    
+bail:
     
     return;
 }
