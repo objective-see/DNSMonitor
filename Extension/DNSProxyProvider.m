@@ -1564,6 +1564,9 @@ bail:
         
         //close
         fclose(fp);
+        
+        //free
+        free(bytes);
     }
     
     return;
