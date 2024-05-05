@@ -586,7 +586,7 @@ bail:
     return handled;
 }
 
-//read from (remote) endpoint, then write to flow
+//read from (remote) endpoint, then write to (local) flow
 -(void)flowInUDP:(NEAppProxyUDPFlow*)flow connection:(nw_connection_t)connection endpoint:(NWHostEndpoint*)endpoint
 {
     //read from (remote) connection
@@ -644,14 +644,14 @@ bail:
                     //NX packet to block
                     if(YES == [appArgs containsObject:ARGS_BLOCK_VIA_NX])
                     {
-                        //create NX packet
-                        content = (dispatch_data_t)[self createNXResponse:(NSData*)content];
-                        
                         //dbg msg
                         if(YES != [appArgs containsObject:ARGS_JSON])
                         {
-                            os_log(logHandle, "blocking request via 'NX' packet");
+                            os_log(logHandle, "blocking (UDP) response via 'NX' packet");
                         }
+                        
+                        //create NX packet
+                        content = (dispatch_data_t)[self createNXResponse:(NSData*)content protocol:SOCK_DGRAM];
                     }
                     //block via close of connection
                     else
@@ -659,7 +659,7 @@ bail:
                         //dbg msg
                         if(YES != [appArgs containsObject:ARGS_JSON])
                         {
-                            os_log(logHandle, "blocking request by closing flow");
+                            os_log(logHandle, "blocking (UDP) response by closing flow");
                         }
                         
                         //close
@@ -672,7 +672,7 @@ bail:
                     }
                 }
         
-                //write to flow
+                //write remote datagram, or NX packet to local flow
                 [flow writeDatagrams:@[(NSData*)content] sentByEndpoints:@[endpoint] completionHandler:^(NSError *error)
                 {
                     //error?
@@ -709,7 +709,7 @@ bail:
     
 }
 
-//read from flow, then write to (remote) endpoint
+//read from (local) flow, then write to (remote) endpoint
 -(void)flowOutUDP:(NEAppProxyUDPFlow*)flow {
 
     //read from flow
@@ -780,7 +780,7 @@ bail:
             //block?
             if(YES == block)
             {
-                //NX packet to block
+                //create NX packet to block
                 if(YES == [appArgs containsObject:ARGS_BLOCK_VIA_NX])
                 {
                     //response
@@ -789,11 +789,11 @@ bail:
                     //dbg msg
                     if(YES != [appArgs containsObject:ARGS_JSON])
                     {
-                        os_log(logHandle, "blocking request via 'NX' packet");
+                        os_log(logHandle, "blocking (UDP) request via 'NX' packet");
                     }
                     
                     //create NX packet
-                    response = [self createNXResponse:packet];
+                    response = [self createNXResponse:packet protocol:SOCK_DGRAM];
                     
                     [flow writeDatagrams:@[(NSData*)response] sentByEndpoints:endpoints completionHandler:^(NSError *error)
                     {
@@ -806,7 +806,7 @@ bail:
                              //cancel
                              nw_connection_cancel(connection);
                              
-                             os_log_error(OS_LOG_DEFAULT, "writeDatagrams ERROR: %{public}@", error);
+                             os_log_error(logHandle, "writeDatagrams ERROR: %{public}@", error);
              
                              return;
                          }
@@ -814,8 +814,6 @@ bail:
                      }];
                     
                     return;
-                    
-                    
                 }
                 //block via close of connection
                 else
@@ -823,7 +821,7 @@ bail:
                     //dbg msg
                     if(YES != [appArgs containsObject:ARGS_JSON])
                     {
-                        os_log(logHandle, "blocking request by closing flow");
+                        os_log(logHandle, "blocking (UDP) request by closing flow");
                     }
                     
                     //close
@@ -957,7 +955,7 @@ bail:
     return;
 }
 
-//read from (remote) endpoint, then write to flow
+//read from (remote) endpoint, then write to (local) flow
 -(void)flowInTCP:(NEAppProxyTCPFlow*)flow connection:(nw_connection_t)connection
 {
     //read from (remote) connection
@@ -1006,7 +1004,6 @@ bail:
             if(((NSData*)content).length < sizeof(uint16_t) + length)
             {
                 //err msg
-                //err msg
                 if(YES != [appArgs containsObject:ARGS_JSON])
                 {
                     os_log_error(logHandle, "ERROR: reported length %d, greater than packet length %lu", length, (unsigned long)((NSData*)content).length);
@@ -1042,23 +1039,39 @@ bail:
             //block?
             if(YES == block)
             {
-                //dbg msg
-                if(YES != [appArgs containsObject:ARGS_JSON])
+                //NX packet to block
+                if(YES == [appArgs containsObject:ARGS_BLOCK_VIA_NX])
                 {
-                    os_log(logHandle, "blocking request (not writing to local flow)");
+                    //dbg msg
+                    if(YES != [appArgs containsObject:ARGS_JSON])
+                    {
+                        os_log(logHandle, "blocking (TCP) response via 'NX' packet");
+                    }
+                    
+                    //create NX packet
+                    content = (dispatch_data_t)[self createNXResponse:(NSData*)content protocol:SOCK_STREAM];
                 }
-                
-                //close
-                [flow closeWriteWithError:nil];
-                
-                //close
-                nw_connection_set_state_changed_handler(connection, NULL);
-                nw_connection_cancel(connection);
-                
-                return;
+                //block via close of connection
+                else
+                {
+                    //dbg msg
+                    if(YES != [appArgs containsObject:ARGS_JSON])
+                    {
+                        os_log(logHandle, "blocking (TCP) response by closing flow");
+                    }
+                    
+                    //close
+                    [flow closeWriteWithError:nil];
+                    
+                    //close
+                    nw_connection_set_state_changed_handler(connection, NULL);
+                    nw_connection_cancel(connection);
+                    
+                    return;
+                }
             }
         
-            //got data to write?
+            //got data to write (or NX packet)
             if(0 != ((NSData*)content).length)
             {
                 //write to flow
@@ -1194,20 +1207,63 @@ bail:
         //block?
         if(YES == block)
         {
-            //dbg msg
-            if(YES != [appArgs containsObject:ARGS_JSON])
+            //create NX packet to block
+            if(YES == [appArgs containsObject:ARGS_BLOCK_VIA_NX])
             {
-                os_log(logHandle, "blocking request (not sending to remote endpoint)");
+                //NX packet
+                NSMutableData* nxPacket = nil;
+                
+                //dbg msg
+                if(YES != [appArgs containsObject:ARGS_JSON])
+                {
+                    os_log(logHandle, "blocking (TCP) request via 'NX' packet");
+                }
+                
+                //create NX packet
+                nxPacket = [self createNXResponse:data protocol:SOCK_STREAM];
+                
+                //write NX packet to (local) flow
+                [flow writeData:nxPacket withCompletionHandler:^(NSError * _Nullable error)
+                {
+                    //error?
+                    if(nil != error)
+                    {
+                        //err msg
+                        if(YES != [appArgs containsObject:ARGS_JSON])
+                        {
+                            os_log_error(logHandle, "writeData ERROR: %{public}@", error);
+                        }
+                    }
+                    
+                    //either way, close
+                    [flow closeWriteWithError:nil];
+                    
+                    //close out connection too
+                    nw_connection_set_state_changed_handler(remoteConnection, NULL);
+                    nw_connection_cancel(remoteConnection);
+                    
+                    return;
+                    
+                }];
             }
-            
-            //close
-            [flow closeWriteWithError:nil];
-            
-            //close
-            nw_connection_set_state_changed_handler(remoteConnection, NULL);
-            nw_connection_cancel(remoteConnection);
-            
-            return;
+            //block via close of connection
+            else
+            {
+                //dbg msg
+                if(YES != [appArgs containsObject:ARGS_JSON])
+                {
+                    os_log(logHandle, "blocking (TCP) request by closing flow");
+                }
+                
+                //close
+                [flow closeWriteWithError:nil];
+                
+                //close
+                nw_connection_set_state_changed_handler(remoteConnection, NULL);
+                nw_connection_cancel(remoteConnection);
+                
+                return;
+            }
         }
         
         //data
@@ -1374,23 +1430,36 @@ bail:
     return block;
 }
 
-//given a dns request, build a NXDOMAIN response
--(NSMutableData*)createNXResponse:(NSData*)request
+//given a DNS request, build a NXDOMAIN response
+-(NSMutableData*)createNXResponse:(NSData*)request protocol:(NSUInteger)protocol
 {
     dns_header_t *header = nil;
     NSMutableData* response = nil;
     
-    os_log_debug(OS_LOG_DEFAULT, "building NXDOMAIN response");
-    
+    //dbg msg
+    if(YES != [appArgs containsObject:ARGS_JSON])
+    {
+        os_log_debug(logHandle, "method '%s' invoked", __PRETTY_FUNCTION__);
+    }
+  
     if(request.length < sizeof(dns_header_t)) {
         goto bail;
     }
     
-    //copy
+    //make copy of packet
     response = [request mutableCopy];
     
-    //update header
-    header = (dns_header_t *)[response bytes];
+    //header is at start of packet
+    header = (dns_header_t *)response.bytes;
+    
+    //unless it's a TCP request
+    // ...then it comes after a length
+    if(SOCK_STREAM == protocol)
+    {
+        header = (dns_header_t *)((char*)header + sizeof(uint16_t));
+    }
+    
+    //update
     header->flags |= htons(0x8000);
     header->flags &= ~htons(0xF);
     header->flags |= htons(0x3);
@@ -1596,6 +1665,9 @@ bail:
     //formatted packet
     NSMutableDictionary* formattedPacket = nil;
     
+    //date formatter
+    NSDateFormatter* dateFormatter = nil;
+    
     //header
     dns_header_t* header = nil;
     
@@ -1621,6 +1693,9 @@ bail:
         formattedPacket[@"Error"] = @"Packet is NULL";
         goto bail;
     }
+    
+    dateFormatter = [[NSDateFormatter alloc] init];
+    dateFormatter.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
     
     //error?
     if(packet->status != DNS_STATUS_OK)
@@ -1954,7 +2029,7 @@ bail:
     @try
     {
         //serialize
-        data = [NSJSONSerialization dataWithJSONObject:@{@"Process":processInfo, @"Packet":formattedPacket} options:options error:&error];
+        data = [NSJSONSerialization dataWithJSONObject:@{@"Process":processInfo, @"Packet":formattedPacket, @"Timestamp":[dateFormatter stringFromDate:[NSDate date]]} options:options error:&error];
         if(nil == data)
         {
             //bail
