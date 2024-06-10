@@ -8,6 +8,9 @@
 
 #import "main.h"
 
+//flag
+BOOL outputJSON = NO;
+
 //main interface
 // start extension
 // ...then dump all msgs to stdout
@@ -48,16 +51,18 @@ int main(int argc, const char * argv[]) {
             goto bail;
         }
         
+        //set flag
+        outputJSON = [arguments containsObject:ARGS_JSON];
+        
         //get parent
         parent = getParentBundleID();
         
         //dbg msg
-        if(YES != [arguments containsObject:ARGS_JSON])
+        if(YES != outputJSON)
         {
             NSLog(@"Started %s (pid: %d, parent: %@) ", BUNDLE_ID, getpid(), parent);
         }
         
-    
         //CHECK 0x1:
         // must be launched via Terminal
         // if launched via Finder, Dock etc, show main app logic
@@ -77,7 +82,7 @@ int main(int argc, const char * argv[]) {
             status = -1;
          
              //err msg
-             if(YES != [arguments containsObject:ARGS_JSON])
+             if(YES != outputJSON)
              {
                  //err msg
                  NSLog(@"\n\nERROR: As %@ uses a System Extension, Apple requires it must be located in /Applications\n\n", [APP_NAME stringByDeletingPathExtension]);
@@ -91,6 +96,23 @@ int main(int argc, const char * argv[]) {
             
              goto bail;
         }
+        
+        //unload daemon?
+        // when previously run in 'daemon' mode
+        if(YES == [arguments containsObject:ARGS_UNLOAD])
+        {
+            //dbg msg
+            NSLog(@"unloading extension");
+            
+            //stop
+            stopExtension();
+            
+            //dbg msg
+            NSLog(@"goodbye...");
+            
+            //bye
+            goto bail;
+        }
     
         //init predicate to capture log message from extension
         predicate = [NSPredicate predicateWithFormat:@"subsystem='com.objective-see.dnsmonitor'"];
@@ -102,20 +124,21 @@ int main(int argc, const char * argv[]) {
         // ...and (forevers) print out any messages from extension
         [logMonitor start:predicate level:Log_Level_Default eventHandler:^(OSLogEventProxy* event) {
             
-            //json (lines)
-            if(YES == [arguments containsObject:ARGS_JSON])
+            //output message
+            // from extension
+            if(YES != outputJSON)
+            {
+                //dbg msg
+                NSLog(@"%@", event.composedMessage);
+            }
+            //output message
+            // from extension ...as JSON
+            else
             {
                 //print / flush
                 printf("%s\n", event.composedMessage.UTF8String);
                 fflush(stdout);
                 
-            }
-            //print
-            // ...via NSLog()
-            else
-            {
-                //dbg msg from extension
-                NSLog(@"%@", event.composedMessage);
             }
             
             //inc
@@ -134,16 +157,37 @@ int main(int argc, const char * argv[]) {
         // stop (deactivate extension)
         dispatch_source_set_event_handler(source, ^{
             
-            //json
-            if(YES == [arguments containsObject:ARGS_JSON])
+            //dbg msg
+            if(YES != outputJSON)
+            {
+                //dbg msg
+                NSLog(@"caught 'SIGINT'");
+            }
+            
+            //wrap up json
+            if(YES == outputJSON)
             {
                 //end/flush
                 printf("]");
                 fflush(stdout);
             }
             
-            //stop
-            stopExtension();
+            //stop daemon
+            // unless we're in 'daemon' mode
+            if(YES != [arguments containsObject:ARGS_DAEMON])
+            {
+                //stop
+                stopExtension();
+            }
+            //dbg msg
+            else
+            {
+                if(YES != outputJSON)
+                {
+                    //dbg msg
+                    NSLog(@"running in '%@' mode, so not unloading extension", ARGS_DAEMON);
+                }
+            }
             
             //bye!
             exit(0);
@@ -160,7 +204,7 @@ int main(int argc, const char * argv[]) {
             if(YES != started)
             {
                 //err msg
-                if(YES != [arguments containsObject:ARGS_JSON])
+                if(YES != outputJSON)
                 {
                     //dbg msg
                     NSLog(@"ERROR: failed to start System/Network Extension");
@@ -209,7 +253,12 @@ void usage(void)
     printf(" %s                 Output is formatted as JSON\n", ARGS_JSON.UTF8String);
     printf(" %s               JSON output is 'pretty-printed'\n", ARGS_PRETTY.UTF8String);
     printf(" %s                   Block via 'NX' packet\n", ARGS_BLOCK_VIA_NX.UTF8String);
-    printf(" %s <block list>   File of domains / ip addresses to block\n", ARGS_BLOCK.UTF8String);
+    printf(" %s                   Block via 'NX' packet\n\n", ARGS_BLOCK_VIA_NX.UTF8String);
+    
+    printf(" %s               Run in 'daemon' mode (extension won't be unloaded)\n", ARGS_DAEMON.UTF8String);
+    printf(" %s               Unload extension\n\n", ARGS_UNLOAD.UTF8String);
+    
+    printf(" %s <block list>   File of domains / ip addresses to block\n\n", ARGS_BLOCK.UTF8String);
     
     return;
 }
@@ -315,7 +364,7 @@ BOOL stopExtension(void)
         if(YES != toggled)
         {
             //err msg
-            if(YES != [NSProcessInfo.processInfo.arguments containsObject:ARGS_JSON])
+            if(YES != outputJSON)
             {
                 NSLog(@"ERROR: failed to deactivate System Extension");
             }
@@ -324,7 +373,7 @@ BOOL stopExtension(void)
         else
         {
             //dbg msg
-            if(YES != [NSProcessInfo.processInfo.arguments containsObject:ARGS_JSON])
+            if(YES != outputJSON)
             {
                 NSLog(@"deactivated System Extension");
             }

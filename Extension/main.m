@@ -34,18 +34,30 @@ int main(int argc, char *argv[])
     //pool
     @autoreleasepool {
         
+    //launcher app
+    pid_t application = -1;
+        
     //init log
     logHandle = os_log_create(BUNDLE_ID, "extension");
         
-    //get args of application
-    appArgs = getArgs(findProcess([APP_NAME stringByDeletingPathExtension]));
-        
+    //find app
+    application = findProcess([APP_NAME stringByDeletingPathExtension]);
+    if(-1 == application)
+    {
+        os_log(logHandle, "application not found ...maybe running in 'do not unload mode'");
+    }
+    else
+    {
+        //get args of application
+        appArgs = getArgs(application);
+    }
+    
     //dbg msg
     if(YES != [appArgs containsObject:ARGS_JSON])
     {
         os_log(logHandle, "extension loaded!");
     }
-        
+
     //start sysext
     // Apple notes, "call [this] as early as possible"
     [NEProvider startSystemExtensionMode];

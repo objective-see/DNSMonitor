@@ -38,7 +38,10 @@
 #define ARGS_JSON @"-json"
 #define ARGS_BLOCK @"-block"
 #define ARGS_PRETTY @"-pretty"
-#define ARGS_BLOCK_VIA_NX @"-nx"
 
+#define ARGS_DAEMON @"-daemon"
+#define ARGS_UNLOAD @"-unload"
+
+#define ARGS_BLOCK_VIA_NX @"-nx"
 
 #endif /* const_h */
