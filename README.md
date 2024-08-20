@@ -1,2 +1,2 @@
 # DNSMonitor
-A DNS Monitor, leveraging Apple's NEDNSProxyProvider/Network Extension Framework
+A user-mode DNS Monitor, leveraging Apple's Network Extension Framework (`NEDNSProxyProvider`).
