@@ -253,7 +253,6 @@ void usage(void)
     printf(" %s                 Output is formatted as JSON\n", ARGS_JSON.UTF8String);
     printf(" %s               JSON output is 'pretty-printed'\n", ARGS_PRETTY.UTF8String);
     printf(" %s                   Block via 'NX' packet\n", ARGS_BLOCK_VIA_NX.UTF8String);
-    printf(" %s                   Block via 'NX' packet\n\n", ARGS_BLOCK_VIA_NX.UTF8String);
     
     printf(" %s               Run in 'daemon' mode (extension won't be unloaded)\n", ARGS_DAEMON.UTF8String);
     printf(" %s               Unload extension\n\n", ARGS_UNLOAD.UTF8String);
